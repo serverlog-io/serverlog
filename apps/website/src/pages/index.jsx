@@ -1,5 +1,5 @@
 import Head from "next/head";
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 const LanguageContext = createContext({
   language: "javascript",
@@ -119,6 +119,8 @@ await axios.post(
 );`,
   },
 ];
+
+const INSTALL_CURL = `curl -fsSL https://raw.githubusercontent.com/serverlog-io/serverlog/main/scripts/install.sh | bash`;
 
 const SYNTAX = [
   {
@@ -285,7 +287,7 @@ function Highlighted({ code, language }) {
 
 function CodeBlock({ code, language = "bash", filename }) {
   return (
-    <div className="border border-border bg-bg-code rounded-md overflow-hidden">
+    <div className="group border border-border bg-bg-code rounded-md overflow-hidden transition-colors duration-200 hover:border-border-strong">
       <div className="flex items-center justify-between px-4 py-2 border-b border-border">
         <span className="text-xs font-mono text-fg-subtle">
           {filename || language}
@@ -339,7 +341,7 @@ function TabbedCode({ tabs }) {
 
 function MethodBadge({ method }) {
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-medium bg-accent/10 text-accent">
+    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-medium bg-accent/10 text-accent glow-accent">
       {method}
     </span>
   );
@@ -369,17 +371,25 @@ function ChevronIcon({ open }) {
 function EndpointArticle({ ep, defaultOpen }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <article className="border-b border-border last:border-b-0 pb-10">
+    <article
+      className={`rounded-lg border transition-all duration-200 ${
+        open
+          ? "border-border-strong bg-bg-elevated/30"
+          : "border-border bg-bg-elevated/10 hover:border-border-strong hover:bg-bg-elevated/30 hover:-translate-y-px"
+      }`}
+    >
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="w-full flex items-center justify-between gap-6 text-left group cursor-pointer"
+        className="w-full flex items-center justify-between gap-6 text-left group cursor-pointer px-5 py-5"
       >
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 mb-2">
             <MethodBadge method={ep.method} />
-            <code className="font-mono text-sm text-fg">{ep.path}</code>
+            <code className="font-mono text-sm text-fg-muted group-hover:text-fg transition-colors">
+              {ep.path}
+            </code>
           </div>
           <h3 className="font-serif text-2xl tracking-tight group-hover:text-accent transition-colors">
             {ep.title}
@@ -388,7 +398,7 @@ function EndpointArticle({ ep, defaultOpen }) {
         <ChevronIcon open={open} />
       </button>
       {open && (
-        <div className="mt-5">
+        <div className="px-5 pb-6">
           <p className="mb-6 text-fg-muted leading-relaxed">
             {ep.description}
           </p>
@@ -404,6 +414,89 @@ function EndpointArticle({ ep, defaultOpen }) {
   );
 }
 
+const SAMPLE_EVENTS = [
+  { channel: "billing", icon: "💳", title: "Payment $29" },
+  { channel: "auth", icon: "🔔", title: "New signup" },
+  { channel: "api", icon: "⚠️", title: "500 timeout" },
+  { channel: "ops", icon: "📦", title: "Deploy shipped" },
+  { channel: "billing", icon: "💰", title: "Plan renewed" },
+  { channel: "auth", icon: "🔐", title: "Login" },
+  { channel: "api", icon: "🚀", title: "Webhook sent" },
+  { channel: "email", icon: "📧", title: "Welcome email" },
+];
+
+function formatAge(secs) {
+  if (secs <= 0) return "now";
+  if (secs < 60) return `${secs}s`;
+  return `${Math.floor(secs / 60)}m`;
+}
+
+function LiveStream() {
+  const [events, setEvents] = useState([
+    { id: 0, ...SAMPLE_EVENTS[0], age: 2 },
+    { id: 1, ...SAMPLE_EVENTS[1], age: 5 },
+    { id: 2, ...SAMPLE_EVENTS[2], age: 9 },
+    { id: 3, ...SAMPLE_EVENTS[3], age: 14 },
+    { id: 4, ...SAMPLE_EVENTS[4], age: 21 },
+    { id: 5, ...SAMPLE_EVENTS[5], age: 32 },
+  ]);
+
+  useEffect(() => {
+    let nextId = 100;
+    let sampleIdx = 6;
+    const tick = setInterval(() => {
+      setEvents((prev) => prev.map((e) => ({ ...e, age: e.age + 1 })));
+    }, 1000);
+    const add = setInterval(() => {
+      const sample = SAMPLE_EVENTS[sampleIdx % SAMPLE_EVENTS.length];
+      sampleIdx++;
+      const id = nextId++;
+      setEvents((prev) => [{ id, ...sample, age: 0 }, ...prev.slice(0, 5)]);
+    }, 3400);
+    return () => {
+      clearInterval(tick);
+      clearInterval(add);
+    };
+  }, []);
+
+  return (
+    <div className="border border-border bg-bg-elevated/40 rounded-lg overflow-hidden backdrop-blur-[1px]">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
+        <div className="flex items-center gap-2">
+          <span className="live-dot w-1.5 h-1.5 rounded-full bg-syntax-string inline-block" />
+          <span className="text-[0.65rem] font-mono uppercase tracking-[0.18em] text-fg-subtle">
+            live
+          </span>
+        </div>
+        <span className="text-[0.65rem] font-mono text-fg-subtle">
+          api.serverlog.dev
+        </span>
+      </div>
+      <ul className="divide-y divide-border">
+        {events.map((e, i) => (
+          <li
+            key={e.id}
+            className={`flex items-center gap-3 px-4 py-2.5 text-sm ${
+              i === 0 ? "animate-fade-in-up" : ""
+            }`}
+          >
+            <span className="text-base leading-none w-5 text-center">
+              {e.icon}
+            </span>
+            <span className="font-mono text-xs text-syntax-keyword shrink-0">
+              #{e.channel}
+            </span>
+            <span className="text-fg truncate flex-1">{e.title}</span>
+            <span className="font-mono text-[0.7rem] text-fg-subtle tabular-nums shrink-0">
+              {formatAge(e.age)}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export default function Home() {
   return (
     <LanguageProvider>
@@ -416,7 +509,7 @@ export default function Home() {
       </Head>
 
       <header className="border-b border-border">
-        <div className="max-w-3xl mx-auto px-6 py-5 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-6 py-5 flex items-center justify-between">
           <a href="/" className="font-serif text-lg tracking-tight">
             serverlog
           </a>
@@ -440,42 +533,64 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-6">
+      <main>
         {/* Hero */}
-        <section className="pt-24 pb-20">
-          <h1 className="font-serif text-5xl md:text-6xl leading-[1.05] tracking-tight">
-            Event tracking,
-            <br />
-            <span className="text-fg-muted italic">one endpoint away.</span>
-          </h1>
-          <p className="mt-8 text-lg text-fg-muted max-w-xl leading-relaxed">
-            An open-source, self-hosted analytics platform. Three REST endpoints,
-            real-time streaming, no SDK required. Send your first event in under
-            a minute.
-          </p>
-          <div className="mt-10 flex items-center gap-3">
-            <a
-              href="#api"
-              className="inline-flex items-center px-5 py-2.5 bg-accent text-white text-sm font-medium rounded-md hover:bg-accent-hover transition-colors"
-            >
-              Get started
-            </a>
-            <a
-              href="https://github.com/serverlog-io/serverlog"
-              className="inline-flex items-center px-5 py-2.5 border border-border-strong text-sm font-medium rounded-md hover:bg-bg-elevated transition-colors"
-            >
-              View on GitHub
-            </a>
+        <section className="relative pt-20 md:pt-28 pb-20 md:pb-28">
+          <div className="max-w-5xl mx-auto px-6">
+            <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-start">
+              <div>
+                <h1 className="font-serif text-4xl md:text-5xl lg:text-[3.25rem] leading-[1.05] tracking-[-0.015em]">
+                  Event tracking,
+                  <br />
+                  <span className="text-fg-muted italic">one endpoint away.</span>
+                </h1>
+                <p className="mt-6 text-base text-fg-muted leading-relaxed">
+                  An open-source, self-hosted analytics platform. Three REST
+                  endpoints, real-time streaming, no SDK required. Send your
+                  first event in under a minute.
+                </p>
+                <div className="mt-8">
+                  <CodeBlock
+                    code={INSTALL_CURL}
+                    language="bash"
+                    filename="install on any VPS"
+                  />
+                </div>
+                <div className="mt-5 flex items-center gap-6">
+                  <a
+                    href="https://github.com/serverlog-io/serverlog"
+                    className="inline-flex items-center text-sm font-medium text-fg-muted hover:text-fg transition-colors"
+                  >
+                    View on GitHub →
+                  </a>
+                  <a
+                    href="#api"
+                    className="inline-flex items-center text-sm font-medium text-fg-muted hover:text-fg transition-colors"
+                  >
+                    Read the API ↓
+                  </a>
+                </div>
+              </div>
+              <div className="lg:pt-2">
+                <LiveStream />
+                <p className="mt-3 text-xs text-fg-subtle font-mono">
+                  ↑ a live feed from a self-hosted instance
+                </p>
+              </div>
+            </div>
           </div>
         </section>
 
+        <div className="max-w-3xl mx-auto px-6">
+          <div className="hairline" />
+        </div>
+
+        <div className="max-w-3xl mx-auto px-6">
         {/* API Reference */}
-        <section id="api" className="pb-20">
+        <section id="api" className="pt-20 pb-20">
           <div className="mb-10">
-            <span className="text-xs font-mono uppercase tracking-wider text-fg-subtle">
-              Quickstart
-            </span>
-            <h2 className="mt-2 font-serif text-3xl tracking-tight">
+            <span className="eyebrow">Quickstart</span>
+            <h2 className="mt-3 font-serif text-3xl tracking-tight">
               Send your first event
             </h2>
             <p className="mt-3 text-fg-muted leading-relaxed">
@@ -484,7 +599,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="space-y-10">
+          <div className="space-y-4">
             {ENDPOINTS.map((ep, idx) => (
               <EndpointArticle
                 key={ep.path}
@@ -498,10 +613,8 @@ export default function Home() {
         {/* Search & charts */}
         <section id="search" className="pb-20">
           <div className="mb-10">
-            <span className="text-xs font-mono uppercase tracking-wider text-fg-subtle">
-              Search & charts
-            </span>
-            <h2 className="mt-2 font-serif text-3xl tracking-tight">
+            <span className="eyebrow">Search &amp; charts</span>
+            <h2 className="mt-3 font-serif text-3xl tracking-tight">
               Query anything, chart anything
             </h2>
             <p className="mt-3 text-fg-muted leading-relaxed">
@@ -543,9 +656,7 @@ export default function Home() {
           </dl>
 
           <div className="mt-12 pt-8 border-t border-border">
-            <div className="text-xs font-mono uppercase tracking-wider text-fg-subtle mb-3">
-              Combine them
-            </div>
+            <div className="eyebrow mb-4">Combine them</div>
             <CodeBlock
               code={`@alice plan:pro #billing payment`}
               language="search"
@@ -570,7 +681,7 @@ export default function Home() {
         {/* Auth note */}
         <section className="pb-20">
           <div className="border-l-2 border-accent pl-5 py-1">
-            <div className="text-xs font-mono uppercase tracking-wider text-accent mb-1">
+            <div className="text-[0.7rem] font-mono uppercase tracking-[0.18em] text-accent mb-2">
               Authentication
             </div>
             <p className="text-fg-muted leading-relaxed">
@@ -590,28 +701,23 @@ export default function Home() {
             Ready to ship?
           </h2>
           <p className="mt-3 text-fg-muted leading-relaxed max-w-xl">
-            Self-host with Docker in two commands, or run locally for
-            development. The whole stack is open source.
+            Self-host with Docker in one command, or run locally for
+            development. The whole stack is fair-code and open to inspection.
           </p>
           <div className="mt-8 flex items-center gap-3">
             <a
-              href="http://localhost:3011"
-              className="inline-flex items-center px-5 py-2.5 bg-accent text-white text-sm font-medium rounded-md hover:bg-accent-hover transition-colors"
-            >
-              Open dashboard
-            </a>
-            <a
               href="https://github.com/serverlog-io/serverlog"
-              className="inline-flex items-center px-5 py-2.5 border border-border-strong text-sm font-medium rounded-md hover:bg-bg-elevated transition-colors"
+              className="inline-flex items-center px-5 py-2.5 border border-border-strong text-sm font-medium rounded-md hover:bg-bg-elevated hover:border-fg-subtle transition-colors"
             >
               Read the source
             </a>
           </div>
         </section>
+        </div>
       </main>
 
       <footer className="border-t border-border">
-        <div className="max-w-3xl mx-auto px-6 py-8 flex items-center justify-between text-sm text-fg-subtle">
+        <div className="max-w-5xl mx-auto px-6 py-8 flex items-center justify-between text-sm text-fg-subtle">
           <span className="font-serif">serverlog</span>
           <span>Sustainable Use License · Open source</span>
         </div>

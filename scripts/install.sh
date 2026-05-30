@@ -155,6 +155,44 @@ DOCKER_COMPOSE="${DOCKER_COMPOSE# }"
 
 ok "Prerequisites OK (Docker + Git)"
 
+# ─── Check ports 80/443 are free ─────────────────────────────────────
+port_in_use() {
+    local port="$1"
+    if command -v ss &>/dev/null; then
+        $SUDO ss -tlnH 2>/dev/null | awk '{print $4}' | grep -qE "[.:]${port}\$"
+    elif command -v lsof &>/dev/null; then
+        $SUDO lsof -iTCP:"$port" -sTCP:LISTEN -t 2>/dev/null | grep -q .
+    elif command -v netstat &>/dev/null; then
+        $SUDO netstat -tln 2>/dev/null | awk '{print $4}' | grep -qE "[.:]${port}\$"
+    else
+        return 1   # no tool available — assume free
+    fi
+}
+
+show_port_holder() {
+    local port="$1"
+    if command -v ss &>/dev/null; then
+        $SUDO ss -tlnp 2>/dev/null | awk -v p="$port" '$4 ~ ":"p"$"' | sed 's/^/    /'
+    elif command -v lsof &>/dev/null; then
+        $SUDO lsof -iTCP:"$port" -sTCP:LISTEN 2>/dev/null | sed 's/^/    /'
+    fi
+}
+
+for p in 80 443; do
+    if port_in_use "$p"; then
+        error "Port $p is already in use:"
+        show_port_holder "$p"
+        echo ""
+        echo "  Stop the conflicting service (e.g. nginx, apache, another container)"
+        echo "  and re-run the installer."
+        echo ""
+        echo "  Alternative: run Serverlog behind a global reverse proxy on a different"
+        echo "  port. Editing HTTP_PORT/HTTPS_PORT after install breaks Let's Encrypt"
+        echo "  and Cloudflare proxy defaults."
+        exit 1
+    fi
+done
+
 # ─── Get user input ──────────────────────────────────────────────────
 echo ""
 read -rp "$(echo -e "${BLUE}[serverlog]${NC}") Domain (leave empty for localhost): " USER_DOMAIN </dev/tty

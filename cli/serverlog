@@ -136,6 +136,19 @@ cmd_logs() {
     fi
 }
 
+cmd_password() {
+    need_docker; need_compose; need_home
+    cd "$SERVERLOG_HOME"
+
+    if ! docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^serverlog-backend$'; then
+        die "backend container is not running — try: serverlog start"
+    fi
+
+    # Pass-through args to the backend's existing reset-password script.
+    # -it keeps interactive prompts working (selecting a user, etc).
+    dc exec -it backend node scripts/reset-password.js "$@"
+}
+
 cmd_uninstall() {
     local yes=false
     for arg in "$@"; do
@@ -239,6 +252,7 @@ ${BOLD}COMMANDS${NC}
   restart           Restart all services
   status            Show running containers
   logs [svc...]     Tail logs (optional: postgres, backend, frontend, caddy)
+  password [args]   Change a user password (passes args to reset-password.js)
   version           Show CLI version and install info
   uninstall [-y]    Remove containers, volumes, install dir, CLI and config
   help              Show this help
@@ -264,6 +278,7 @@ case "${1:-help}" in
     restart)              shift; cmd_restart "$@" ;;
     status|ps)            shift; cmd_status "$@" ;;
     logs)                 shift; cmd_logs "$@" ;;
+    password|passwd)      shift; cmd_password "$@" ;;
     uninstall)            shift; cmd_uninstall "$@" ;;
     version|--version|-v) cmd_version ;;
     help|--help|-h|"")    cmd_help ;;
