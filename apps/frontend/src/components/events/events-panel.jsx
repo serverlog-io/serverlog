@@ -299,7 +299,7 @@ export function EventsPanel({ projectId, onOpenPlayground }) {
   const [chartName, setChartName] = useState("");
   const [savingChart, setSavingChart] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null); // { type: 'event' | 'channel', data }
-  const [viewMode, setViewMode] = useState('cards'); // 'cards' | 'compact'
+  const [viewMode, setViewMode] = useState('compact'); // 'cards' | 'compact'
   const [deleting, setDeleting] = useState(false);
   const loaderRef = useRef(null);
   const searchBarRef = useRef(null);
