@@ -1,0 +1,214 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String    @id @default(cuid())
+  email              String    @unique
+  password           String
+  name               String    @default("")
+  role               Role      @default(USER)
+  mustChangePassword Boolean   @default(false)
+  isActive           Boolean   @default(true)
+  lastLoginAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  projects Project[]
+  apiKeys  ApiKey[]
+
+  @@index([email])
+  @@index([role])
+  @@index([createdAt(sort: Desc)])
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String
+  description String   @default("")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  channels        Channel[]
+  apiKeys         ApiKey[]
+  events          Event[]
+  insights        Insight[]
+  userProfiles    UserProfile[]
+  dashboardCharts DashboardChart[]
+  funnels         Funnel[]
+
+  @@unique([ownerId, slug])
+  @@index([ownerId])
+  @@index([slug])
+  @@index([createdAt(sort: Desc)])
+}
+
+model Channel {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String
+  description String   @default("")
+  color       String   @default("#6366f1")
+  icon        String   @default("")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  events Event[]
+
+  @@unique([projectId, slug])
+  @@index([projectId])
+  @@index([createdAt(sort: Desc)])
+}
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  name       String
+  keyHash    String    @unique
+  keyPreview String
+  isActive   Boolean   @default(true)
+  lastUsedAt DateTime?
+  usageCount Int       @default(0)
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  projectId   String
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User    @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([keyHash])
+  @@index([projectId])
+  @@index([createdById])
+  @@index([isActive])
+  @@index([expiresAt])
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  event       String
+  description String   @default("")
+  icon        String   @default("")
+  tags        Json     @default("{}")
+  parser      Parser   @default(TEXT)
+  userId      String?
+  timestamp   DateTime @default(now())
+  metadata    Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  channelId String
+  channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, timestamp(sort: Desc)])
+  @@index([channelId, timestamp(sort: Desc)])
+  @@index([projectId, channelId])
+  @@index([projectId, event])
+  @@index([projectId, userId])
+  @@index([projectId, userId, timestamp(sort: Desc)])
+}
+
+model Insight {
+  id            String   @id @default(cuid())
+  title         String
+  value         Json
+  icon          String   @default("")
+  previousValue Json?
+  lastUpdatedAt DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, title])
+  @@index([projectId])
+  @@index([lastUpdatedAt(sort: Desc)])
+}
+
+model UserProfile {
+  id          String   @id @default(cuid())
+  externalId  String
+  properties  Json     @default("{}")
+  firstSeenAt DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+  eventsCount Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, externalId])
+  @@index([projectId])
+  @@index([lastSeenAt(sort: Desc)])
+  @@index([eventsCount(sort: Desc)])
+}
+
+model DashboardChart {
+  id        String    @id @default(cuid())
+  name      String
+  search    String    @default("")
+  channel   String?
+  color     String    @default("#6366f1")
+  chartType ChartType @default(BAR)
+  position  Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([projectId, position])
+}
+
+model Funnel {
+  id          String   @id @default(cuid())
+  name        String
+  description String   @default("")
+  steps       Json     // [{event: "signup", channel?: "auth", tags?: {}}]
+  timeWindow  Int      @default(7) // days to complete funnel
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([createdAt(sort: Desc)])
+}
+
+enum ChartType {
+  BAR
+  LINE
+  AREA
+  STEP
+  SCATTER
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum Parser {
+  TEXT
+  MARKDOWN
+}

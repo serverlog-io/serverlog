@@ -1,0 +1,57 @@
+{
+  "name": "@serverlog/backend",
+  "version": "1.0.0",
+  "description": "Open-source real-time event tracking and analytics platform",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "seed": "node scripts/seed.js",
+    "seed:today": "node scripts/seed-today.js",
+    "reset-password": "node scripts/reset-password.js",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "postinstall": "prisma generate",
+    "test": "jest"
+  },
+  "keywords": [
+    "analytics",
+    "event-tracking",
+    "logging",
+    "monitoring",
+    "real-time"
+  ],
+  "author": "Mormon Negro",
+  "license": "MIT",
+  "_moduleAliases": {
+    "@core": "src/core",
+    "@libs": "src/core/libs",
+    "@middlewares": "src/middlewares",
+    "@modules": "src/modules",
+    "@utils": "src/utils"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.2.1",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-async-errors": "^3.1.1",
+    "express-rate-limit": "^8.2.1",
+    "jsonwebtoken": "^9.0.2",
+    "module-alias": "^2.2.3",
+    "pino": "^9.6.0",
+    "pino-pretty": "^13.0.0",
+    "socket.io": "^4.8.3",
+    "uuid": "^11.0.4",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.9",
+    "prisma": "^6.2.1",
+    "supertest": "^7.1.4"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "serverlog-monorepo",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "test:backend": "npm run test --workspace=apps/backend",
+    "dev": "npm run dev --workspace=apps/backend & npm run dev --workspace=apps/frontend & npm run dev --workspace=apps/website",
+    "dev:backend": "npm run dev --workspace=apps/backend",
+    "dev:frontend": "npm run dev --workspace=apps/frontend",
+    "dev:website": "npm run dev --workspace=apps/website",
+    "build": "npm run build --workspace=apps/frontend",
+    "build:website": "npm run build --workspace=apps/website",
+    "start": "npm run start --workspace=apps/backend",
+    "test": "npm run test --workspace=apps/backend",
+    "seed": "npm run seed --workspace=apps/backend",
+    "seed:today": "npm run seed:today --workspace=apps/backend",
+    "reset-password": "npm run reset-password --workspace=apps/backend",
+    "db:generate": "npm run db:generate --workspace=apps/backend",
+    "db:push": "npm run db:push --workspace=apps/backend",
+    "db:migrate": "npm run db:migrate --workspace=apps/backend",
+    "db:studio": "npm run db:studio --workspace=apps/backend",
+    "lint": "npm run lint --workspace=apps/frontend"
+  }
+}

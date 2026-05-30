@@ -1,0 +1,14 @@
+# Use this Caddyfile when behind Cloudflare proxy (orange cloud).
+# Cloudflare handles TLS; Caddy serves HTTP only.
+# Make sure Cloudflare SSL/TLS mode is set to "Full" (not Strict).
+
+:80 {
+	# Backend API routes
+	reverse_proxy /api/* backend:3010
+	reverse_proxy /v1/* backend:3010
+	reverse_proxy /health backend:3010
+	reverse_proxy /socket.io/* backend:3010
+
+	# Everything else goes to Next.js
+	reverse_proxy frontend:3011
+}

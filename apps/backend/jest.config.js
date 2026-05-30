@@ -1,0 +1,21 @@
+module.exports = {
+  testEnvironment: 'node',
+  testMatch: ['**/__tests__/**/*.test.js'],
+  setupFilesAfterEnv: ['<rootDir>/__tests__/setup.js'],
+  testTimeout: 30000,
+  verbose: true,
+  forceExit: true,
+  clearMocks: true,
+  moduleNameMapper: {
+    '^@core/(.*)$': '<rootDir>/src/core/$1',
+    '^@core$': '<rootDir>/src/core',
+    '^@libs/(.*)$': '<rootDir>/src/core/libs/$1',
+    '^@libs$': '<rootDir>/src/core/libs',
+    '^@middlewares/(.*)$': '<rootDir>/src/middlewares/$1',
+    '^@middlewares$': '<rootDir>/src/middlewares',
+    '^@modules/(.*)$': '<rootDir>/src/modules/$1',
+    '^@modules$': '<rootDir>/src/modules',
+    '^@utils/(.*)$': '<rootDir>/src/utils/$1',
+    '^@utils$': '<rootDir>/src/utils',
+  },
+};
