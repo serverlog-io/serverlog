@@ -200,6 +200,16 @@ cmd_uninstall() {
     printf "  • Docker engine itself\n"
     printf "  • Cloudflare DNS records / SSL/TLS settings\n"
     printf "  • UFW rules for ports 80/443\n"
+
+    # If the caller's shell is inside the now-deleted install dir, its cwd is
+    # stale — git/bash/etc. will fail with "Unable to read current working
+    # directory". We can't change the parent shell's cwd from here.
+    local parent_cwd
+    parent_cwd=$(readlink "/proc/$PPID/cwd" 2>/dev/null || echo "")
+    if [ -n "$parent_cwd" ] && [ ! -d "$parent_cwd" ]; then
+        printf "\n%sYour current shell directory was just removed.%s\n" "$YELLOW" "$NC"
+        printf "Run %scd ~%s before continuing.\n" "$BOLD" "$NC"
+    fi
 }
 
 cmd_version() {

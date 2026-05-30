@@ -5,6 +5,10 @@ set -euo pipefail
 # Usage: curl -fsSL https://raw.githubusercontent.com/serverlog-io/serverlog/main/scripts/install.sh | bash
 # ──────────────────────────────────────────────────────────────────────
 
+# Move to a known-good directory in case the caller's cwd was deleted
+# (e.g. after `serverlog uninstall` ran from inside the install dir).
+cd "${HOME:-/tmp}" 2>/dev/null || cd /
+
 SERVERLOG_VERSION="${SERVERLOG_VERSION:-latest}"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/serverlog}"
 REPO_URL="${REPO_URL:-https://github.com/serverlog-io/serverlog}"
