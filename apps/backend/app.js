@@ -29,6 +29,7 @@ const insightController = require('@modules/insights/insight.controller');
 const userProfileController = require('@modules/identify/userProfile.controller');
 const dashboardController = require('@modules/dashboard/dashboard.controller');
 const funnelController = require('@modules/funnels/funnel.controller');
+const { projectSettingsController } = require('@modules/projectSettings');
 const { v1Controller } = require('@modules/publicApi');
 
 const { verifyToken } = require('@libs/jwt');
@@ -117,6 +118,7 @@ app.use('/api/projects/:projectId/insights', insightController);
 app.use('/api/projects/:projectId/users', userProfileController);
 app.use('/api/projects/:projectId/dashboard', dashboardController);
 app.use('/api/projects/:projectId/funnels', funnelController);
+app.use('/api/projects/:projectId/settings', projectSettingsController);
 
 app.use('/v1', v1Controller);
 

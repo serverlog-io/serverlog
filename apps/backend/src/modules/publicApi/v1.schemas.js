@@ -4,7 +4,7 @@ const logSchema = z.object({
     project: z.string().min(1).optional(),
     channel: z.string().min(1).regex(/^[a-z0-9-]+$/),
     event: z.string().min(1).max(200),
-    description: z.string().max(5000).optional(),
+    description: z.string().max(100000).optional(),
     icon: z.string().max(50).optional(),
     tags: z.record(z.string().regex(/^[a-zA-Z0-9-_]+$/), z.union([z.string(), z.number(), z.boolean()])).optional(),
     parser: z.enum(['text', 'markdown']).optional(),

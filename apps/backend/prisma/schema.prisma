@@ -46,6 +46,7 @@ model Project {
   userProfiles    UserProfile[]
   dashboardCharts DashboardChart[]
   funnels         Funnel[]
+  settings        ProjectSetting[]
 
   @@unique([ownerId, slug])
   @@index([ownerId])
@@ -211,4 +212,16 @@ enum Role {
 enum Parser {
   TEXT
   MARKDOWN
+}
+
+model ProjectSetting {
+  projectId String
+  key       String
+  value     String
+  updatedAt DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, key])
+  @@index([projectId])
 }

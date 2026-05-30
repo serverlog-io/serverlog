@@ -2,6 +2,7 @@ const express = require('express');
 const eventService = require('@modules/events/event.service');
 const insightService = require('@modules/insights/insight.service');
 const userProfileService = require('@modules/identify/userProfile.service');
+const projectSettingsService = require('@modules/projectSettings/projectSettings.service');
 const apiKeyMiddleware = require('./apiKey.middleware');
 const validateMiddleware = require('@middlewares/validate.middleware');
 const { ipRateLimiter, apiKeyRateLimiter } = require('./rateLimit.middleware');
@@ -18,6 +19,28 @@ router.use(apiKeyRateLimiter);
 
 router.post('/log', validateMiddleware(logSchema), async (req, res) => {
     const { project, ...eventData } = req.body;
+
+    // Enforce per-project body limits (configurable from project settings).
+    const projectId = req.project.id;
+    const [maxDescLen, maxTags] = await Promise.all([
+        projectSettingsService.get(projectId, 'maxEventDescriptionLength'),
+        projectSettingsService.get(projectId, 'maxTagsPerEvent'),
+    ]);
+    if (eventData.description && eventData.description.length > maxDescLen) {
+        return res.status(400).json({
+            success: false,
+            error: 'ValidationError',
+            message: `description must be at most ${maxDescLen} characters for this project`,
+        });
+    }
+    const tagsCount = eventData.tags ? Object.keys(eventData.tags).length : 0;
+    if (tagsCount > maxTags) {
+        return res.status(400).json({
+            success: false,
+            error: 'ValidationError',
+            message: `tags must have at most ${maxTags} entries for this project`,
+        });
+    }
 
     const event = await eventService.create(req.project.id, eventData);
 

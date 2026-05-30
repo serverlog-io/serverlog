@@ -1,25 +1,25 @@
 const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
+const projectSettingsService = require('@modules/projectSettings/projectSettings.service');
 
 // Public API rate limiting is applied in two layers:
 //
 // 1. ipRateLimiter (runs BEFORE apiKeyMiddleware)
-//    Limits requests per client IP. Protects the auth/DB lookup from being
-//    hammered with fake or random API keys. This is the first line of defense
-//    against enumeration and DoS: mandating 1000 different Bearer tokens from
-//    the same IP all share this bucket.
+//    Limits requests per client IP, regardless of API key. Configured via env
+//    only (PUBLIC_API_IP_RATE_LIMIT / PUBLIC_API_RATE_WINDOW_SEC). This layer
+//    is a global DoS shield — it can't be per-project because we haven't
+//    resolved which project the request belongs to yet.
 //
 // 2. apiKeyRateLimiter (runs AFTER apiKeyMiddleware)
-//    Limits requests per validated API key (using req.apiKey.id set by the
-//    auth middleware). This is the normal business-level quota for legitimate
-//    traffic. We key off the internal key ID — never the raw secret — so the
-//    limiter storage never holds API keys.
+//    Limits requests per validated API key. Both the limit and the window are
+//    read from the project's settings (req.apiKey.projectId) via
+//    projectSettingsService.getSync — cached for 10s so changes from the UI
+//    propagate without a server restart.
 
-const WINDOW_MS = 60 * 1000;
+const IP_WINDOW_MS = (parseInt(process.env.PUBLIC_API_RATE_WINDOW_SEC, 10) || 60) * 1000;
 const IP_MAX = parseInt(process.env.PUBLIC_API_IP_RATE_LIMIT, 10) || 300;
-const KEY_MAX = parseInt(process.env.PUBLIC_API_KEY_RATE_LIMIT, 10) || 100;
 
 const ipRateLimiter = rateLimit({
-    windowMs: WINDOW_MS,
+    windowMs: IP_WINDOW_MS,
     max: IP_MAX,
     standardHeaders: true,
     legacyHeaders: false,
@@ -35,12 +35,23 @@ const ipRateLimiter = rateLimit({
 });
 
 const apiKeyRateLimiter = rateLimit({
-    windowMs: WINDOW_MS,
-    max: KEY_MAX,
+    windowMs: (req) => {
+        const projectId = req?.apiKey?.projectId;
+        return projectSettingsService.getSync(projectId, 'publicApiRateLimitWindowSec') * 1000;
+    },
+    max: (req) => {
+        const projectId = req?.apiKey?.projectId;
+        if (!projectSettingsService.getSync(projectId, 'publicApiRateLimitEnabled')) return 0;
+        return projectSettingsService.getSync(projectId, 'publicApiKeyRateLimit');
+    },
     standardHeaders: true,
     legacyHeaders: false,
-    keyGenerator: (req) => req.apiKey?.id || ipKeyGenerator(req.ip),
-    skip: () => process.env.NODE_ENV === 'test',
+    keyGenerator: (req) => req?.apiKey?.id || ipKeyGenerator(req.ip),
+    skip: (req) => {
+        if (process.env.NODE_ENV === 'test') return true;
+        const projectId = req?.apiKey?.projectId;
+        return !projectSettingsService.getSync(projectId, 'publicApiRateLimitEnabled');
+    },
     handler: (_req, res) => {
         res.status(429).json({
             success: false,
