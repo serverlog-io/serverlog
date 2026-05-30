@@ -159,6 +159,110 @@ describe('User Profiles API', () => {
     });
   });
 
+  describe('GET /api/projects/:projectId/users/:profileId/breakdown', () => {
+    let profileForBreakdown;
+    let channelA;
+    let channelB;
+
+    beforeAll(async () => {
+      // Set up a profile with a known event distribution
+      await request(app)
+        .post('/v1/identify')
+        .set('Authorization', `Bearer ${testApiKey.key}`)
+        .send({
+          project: testProject.slug,
+          user_id: 'breakdown-user',
+          properties: { plan: 'pro' },
+        });
+
+      const listRes = await request(app)
+        .get(`/api/projects/${testProject.id}/users`)
+        .set('Authorization', `Bearer ${authToken}`);
+      profileForBreakdown = listRes.body.profiles.find(p => p.externalId === 'breakdown-user');
+
+      channelA = await global.prisma.channel.create({
+        data: { name: 'Billing', slug: 'breakdown-billing', projectId: testProject.id },
+      });
+      channelB = await global.prisma.channel.create({
+        data: { name: 'Auth', slug: 'breakdown-auth', projectId: testProject.id },
+      });
+
+      const now = new Date();
+      const events = [
+        { event: 'Payment Completed', channelId: channelA.id, daysAgo: 0 },
+        { event: 'Payment Completed', channelId: channelA.id, daysAgo: 1 },
+        { event: 'Payment Completed', channelId: channelA.id, daysAgo: 2 },
+        { event: 'Login',             channelId: channelB.id, daysAgo: 3 },
+        { event: 'Login',             channelId: channelB.id, daysAgo: 4 },
+        { event: 'Old Event',         channelId: channelA.id, daysAgo: 200 },
+      ];
+
+      for (const e of events) {
+        await global.prisma.event.create({
+          data: {
+            event: e.event,
+            channelId: e.channelId,
+            projectId: testProject.id,
+            userId: 'breakdown-user',
+            timestamp: new Date(now.getTime() - e.daysAgo * 24 * 60 * 60 * 1000),
+            description: '',
+            icon: '',
+            tags: {},
+          },
+        });
+      }
+    });
+
+    it('returns top channels ordered by event count', async () => {
+      const res = await request(app)
+        .get(`/api/projects/${testProject.id}/users/${profileForBreakdown.id}/breakdown?days=30`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.topChannels[0].channel.slug).toBe('breakdown-billing');
+      expect(res.body.topChannels[0].count).toBe(3);
+      expect(res.body.topChannels[1].channel.slug).toBe('breakdown-auth');
+      expect(res.body.topChannels[1].count).toBe(2);
+    });
+
+    it('returns top event names', async () => {
+      const res = await request(app)
+        .get(`/api/projects/${testProject.id}/users/${profileForBreakdown.id}/breakdown?days=30`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+      const names = res.body.topEvents.map(e => e.event);
+      expect(names).toEqual(expect.arrayContaining(['Payment Completed', 'Login']));
+      const payment = res.body.topEvents.find(e => e.event === 'Payment Completed');
+      expect(payment.count).toBe(3);
+    });
+
+    it('respects the days window', async () => {
+      const res = await request(app)
+        .get(`/api/projects/${testProject.id}/users/${profileForBreakdown.id}/breakdown?days=30`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+      // The 200-day-old event should be excluded
+      const oldEvent = res.body.topEvents.find(e => e.event === 'Old Event');
+      expect(oldEvent).toBeUndefined();
+      expect(res.body.windowDays).toBe(30);
+    });
+
+    it('computes daysActive across the window', async () => {
+      const res = await request(app)
+        .get(`/api/projects/${testProject.id}/users/${profileForBreakdown.id}/breakdown?days=30`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+      // Events on days 0,1,2,3,4 → 5 distinct days
+      expect(res.body.daysActive).toBe(5);
+    });
+
+    it('requires auth and project ownership', async () => {
+      const res = await request(app)
+        .get(`/api/projects/${testProject.id}/users/${profileForBreakdown.id}/breakdown`);
+      expect(res.status).toBe(401);
+    });
+  });
+
   describe('DELETE /api/projects/:projectId/users/:profileId', () => {
     it('should delete user profile', async () => {
       // Create profile to delete via public API

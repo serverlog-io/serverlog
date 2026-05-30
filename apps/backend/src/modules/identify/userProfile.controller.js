@@ -52,6 +52,19 @@ router.get('/:profileId/events', async (req, res) => {
     res.json(result);
 });
 
+router.get('/:profileId/breakdown', async (req, res) => {
+    const { days, limit } = req.query;
+    const result = await userProfileService.getBreakdown(
+        req.params.profileId,
+        req.params.projectId,
+        {
+            days: days ? parseInt(days) : undefined,
+            limit: limit ? parseInt(limit) : undefined,
+        }
+    );
+    res.json(result);
+});
+
 router.delete('/:profileId', async (req, res) => {
     await userProfileService.delete(req.params.profileId, req.params.projectId);
     res.json({ message: 'User profile deleted successfully' });

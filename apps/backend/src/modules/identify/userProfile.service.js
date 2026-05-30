@@ -263,4 +263,85 @@ userProfileService.getEvents = async (profileId, projectId, options = {}) => {
     return { events };
 };
 
+userProfileService.getBreakdown = async (profileId, projectId, options = {}) => {
+    const prisma = getPrisma();
+
+    const profile = await prisma.userProfile.findFirst({
+        where: { id: profileId, projectId },
+    });
+
+    if (!profile) {
+        throw new NotFoundError('User profile not found');
+    }
+
+    const { days = 30, limit = 5 } = options;
+    const start = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const baseWhere = {
+        projectId,
+        userId: profile.externalId,
+        timestamp: { gte: start },
+    };
+
+    // Top channels by event count
+    const channelGroups = await prisma.event.groupBy({
+        by: ['channelId'],
+        where: baseWhere,
+        _count: { _all: true },
+        orderBy: { _count: { id: 'desc' } },
+        take: limit,
+    });
+
+    const channelIds = channelGroups.map((g) => g.channelId).filter(Boolean);
+    const channels = channelIds.length
+        ? await prisma.channel.findMany({
+              where: { id: { in: channelIds } },
+              select: { id: true, name: true, slug: true, color: true, icon: true },
+          })
+        : [];
+    const channelMap = new Map(channels.map((c) => [c.id, c]));
+
+    const topChannels = channelGroups
+        .map((g) => ({
+            channel: channelMap.get(g.channelId) || null,
+            count: g._count._all,
+        }))
+        .filter((g) => g.channel);
+
+    // Top event names
+    const eventGroups = await prisma.event.groupBy({
+        by: ['event'],
+        where: baseWhere,
+        _count: { _all: true },
+        orderBy: { _count: { id: 'desc' } },
+        take: limit,
+    });
+
+    const topEvents = eventGroups.map((g) => ({
+        event: g.event,
+        count: g._count._all,
+    }));
+
+    // Days active in the window
+    const distinctDays = await prisma.$queryRaw`
+        SELECT COUNT(DISTINCT DATE_TRUNC('day', "timestamp"))::int AS days
+        FROM "Event"
+        WHERE "projectId" = ${projectId}
+          AND "userId" = ${profile.externalId}
+          AND "timestamp" >= ${start}
+    `;
+    const daysActive = distinctDays[0]?.days || 0;
+
+    const total = topChannels.reduce((s, c) => s + c.count, 0)
+        || topEvents.reduce((s, e) => s + e.count, 0);
+
+    return {
+        topChannels,
+        topEvents,
+        daysActive,
+        totalEventsInWindow: total,
+        windowDays: days,
+    };
+};
+
 module.exports = userProfileService;
