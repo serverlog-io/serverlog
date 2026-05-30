@@ -184,7 +184,7 @@ if [ "$DOMAIN" != "localhost" ]; then
     if [ "$USE_CLOUDFLARE" = true ]; then
         echo "  Cloudflare-specific settings:"
         echo "    • DNS → set Proxy status to Proxied (orange cloud)"
-        echo "    • SSL/TLS → Overview → set encryption mode to ${YELLOW}Flexible${NC}"
+        echo -e "    • SSL/TLS → Overview → set encryption mode to ${YELLOW}Flexible${NC}"
         echo "      (Caddy serves plain HTTP; Cloudflare terminates TLS. Other modes return 521.)"
     else
         echo "  Cloudflare users: keep the DNS record gray-cloud (DNS only) — Let's Encrypt"
