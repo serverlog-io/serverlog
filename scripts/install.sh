@@ -68,6 +68,18 @@ install_docker() {
     fi
 }
 
+detect_public_ip() {
+    local ip
+    for url in https://api.ipify.org https://ifconfig.me https://icanhazip.com; do
+        ip=$(curl -fsSL --max-time 5 "$url" 2>/dev/null | tr -d '[:space:]')
+        if [[ "$ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "$ip"
+            return 0
+        fi
+    done
+    echo ""
+}
+
 install_git() {
     log "Installing git..."
     if command -v apt-get &>/dev/null; then
@@ -153,8 +165,38 @@ if [ "$DOMAIN" != "localhost" ]; then
     read -rp "$(echo -e "${BLUE}[serverlog]${NC}") Choose [1]: " TLS_CHOICE </dev/tty
     if [ "${TLS_CHOICE:-1}" = "2" ]; then
         USE_CLOUDFLARE=true
-        warn "Make sure Cloudflare SSL/TLS mode is set to 'Full' (not Strict)"
     fi
+
+    # ─── DNS configuration walkthrough ───────────────────────────────
+    PUBLIC_IP=$(detect_public_ip)
+    IP_LINE="${PUBLIC_IP:-<your VPS public IP>}"
+
+    echo ""
+    log "DNS configuration required before continuing:"
+    echo ""
+    echo "  In your DNS provider, create an A record:"
+    echo "    Type   A"
+    echo "    Name   $DOMAIN"
+    echo "    Value  $IP_LINE"
+    echo "    TTL    Auto (or 300)"
+    echo ""
+
+    if [ "$USE_CLOUDFLARE" = true ]; then
+        echo "  Cloudflare-specific settings:"
+        echo "    • DNS → set Proxy status to Proxied (orange cloud)"
+        echo "    • SSL/TLS → Overview → set encryption mode to ${YELLOW}Flexible${NC}"
+        echo "      (Caddy serves plain HTTP; Cloudflare terminates TLS. Other modes return 521.)"
+    else
+        echo "  Cloudflare users: keep the DNS record gray-cloud (DNS only) — Let's Encrypt"
+        echo "  needs direct access to validate the domain."
+    fi
+
+    echo ""
+    echo "  Verify it propagated:"
+    echo "    dig +short $DOMAIN"
+    echo ""
+
+    read -rp "$(echo -e "${BLUE}[serverlog]${NC}") Press Enter once DNS is configured (or Ctrl+C to abort)... " _ </dev/tty
 fi
 
 read -erp "$(echo -e "${BLUE}[serverlog]${NC}") Install directory [$INSTALL_DIR]: " USER_DIR </dev/tty

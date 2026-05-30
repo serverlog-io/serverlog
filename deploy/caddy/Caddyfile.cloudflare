@@ -1,6 +1,6 @@
 # Use this Caddyfile when behind Cloudflare proxy (orange cloud).
 # Cloudflare handles TLS; Caddy serves HTTP only.
-# Make sure Cloudflare SSL/TLS mode is set to "Full" (not Strict).
+# Cloudflare SSL/TLS mode must be "Flexible" — anything else returns 521.
 
 :80 {
 	# Backend API routes
