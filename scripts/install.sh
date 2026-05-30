@@ -30,46 +30,112 @@ echo "  ║   Real-time event tracking platform   ║"
 echo "  ╚═══════════════════════════════════════╝"
 echo -e "${NC}"
 
-# ─── Check prerequisites ─────────────────────────────────────────────
-check_command() {
-    if ! command -v "$1" &> /dev/null; then
-        error "$1 is not installed."
-        echo ""
-        case "$1" in
-            docker)
-                echo "  Install Docker: https://docs.docker.com/engine/install/"
-                ;;
-            git)
-                echo "  Install git using your package manager:"
-                echo "    Ubuntu/Debian: sudo apt install git"
-                echo "    macOS: xcode-select --install"
-                ;;
-        esac
-        echo ""
+# ─── Helpers ─────────────────────────────────────────────────────────
+SUDO=""
+if [ "$(id -u)" -ne 0 ]; then
+    if command -v sudo &>/dev/null; then
+        SUDO="sudo"
+    else
+        error "Run as root, or install sudo first."
+        exit 1
+    fi
+fi
+
+confirm() {
+    # confirm "Message" [default Y|n]
+    local msg="$1" default="${2:-Y}" yn
+    read -rp "$(echo -e "${BLUE}[serverlog]${NC}") $msg [$default]: " yn </dev/tty
+    yn="${yn:-$default}"
+    [[ "$yn" =~ ^[Yy]$ ]]
+}
+
+install_docker() {
+    log "Installing Docker via get.docker.com (this can take 1-2 min)..."
+    if ! curl -fsSL https://get.docker.com | $SUDO sh; then
+        error "Docker install failed. See output above."
+        exit 1
+    fi
+    # Start + enable the daemon
+    if command -v systemctl &>/dev/null; then
+        $SUDO systemctl enable --now docker 2>/dev/null || $SUDO service docker start 2>/dev/null || true
+    elif command -v service &>/dev/null; then
+        $SUDO service docker start 2>/dev/null || true
+    fi
+    # Add non-root user to docker group
+    if [ -n "$SUDO" ] && [ -n "${USER:-}" ]; then
+        $SUDO usermod -aG docker "$USER" 2>/dev/null || true
+        warn "Added $USER to the docker group — a new shell may be needed if you re-run as non-root."
+    fi
+}
+
+install_git() {
+    log "Installing git..."
+    if command -v apt-get &>/dev/null; then
+        $SUDO apt-get update -qq && $SUDO apt-get install -y git
+    elif command -v dnf &>/dev/null; then
+        $SUDO dnf install -y git
+    elif command -v yum &>/dev/null; then
+        $SUDO yum install -y git
+    elif command -v apk &>/dev/null; then
+        $SUDO apk add --no-cache git
+    elif command -v pacman &>/dev/null; then
+        $SUDO pacman -Sy --noconfirm git
+    else
+        error "Could not install git automatically. Install manually and re-run."
         exit 1
     fi
 }
 
+# ─── Check prerequisites ─────────────────────────────────────────────
 log "Checking prerequisites..."
-check_command docker
-check_command git
 
-# Check Docker daemon is running
-if ! docker info &> /dev/null; then
-    error "Docker daemon is not running. Please start Docker and try again."
-    exit 1
+if ! command -v git &>/dev/null; then
+    warn "git is not installed."
+    if confirm "Install git now?"; then
+        install_git
+    else
+        error "git is required. Aborting."
+        exit 1
+    fi
+fi
+
+if ! command -v docker &>/dev/null; then
+    warn "Docker is not installed."
+    if confirm "Install Docker automatically?"; then
+        install_docker
+    else
+        error "Docker is required. See https://docs.docker.com/engine/install/"
+        exit 1
+    fi
+fi
+
+# Check Docker daemon is running (might need start after fresh install)
+if ! $SUDO docker info &>/dev/null; then
+    log "Starting Docker daemon..."
+    if command -v systemctl &>/dev/null; then
+        $SUDO systemctl start docker 2>/dev/null || true
+    elif command -v service &>/dev/null; then
+        $SUDO service docker start 2>/dev/null || true
+    fi
+    sleep 2
+    if ! $SUDO docker info &>/dev/null; then
+        error "Docker daemon is not running and could not be started. Start it manually and re-run."
+        exit 1
+    fi
 fi
 
 # Check docker compose
-if docker compose version &> /dev/null; then
-    DOCKER_COMPOSE="docker compose"
-elif command -v docker-compose &> /dev/null; then
-    DOCKER_COMPOSE="docker-compose"
+if $SUDO docker compose version &>/dev/null; then
+    DOCKER_COMPOSE="$SUDO docker compose"
+elif command -v docker-compose &>/dev/null; then
+    DOCKER_COMPOSE="$SUDO docker-compose"
 else
-    error "Docker Compose is not available."
-    echo "  Install Docker Compose: https://docs.docker.com/compose/install/"
+    error "Docker Compose is not available even after Docker install."
+    echo "  Install: https://docs.docker.com/compose/install/"
     exit 1
 fi
+# When running as root, drop the leading SUDO from the variable (it's empty anyway)
+DOCKER_COMPOSE="${DOCKER_COMPOSE# }"
 
 ok "Prerequisites OK (Docker + Git)"
 
@@ -208,7 +274,7 @@ log "Waiting for services to be ready..."
 MAX_WAIT=120
 ELAPSED=0
 while [ $ELAPSED -lt $MAX_WAIT ]; do
-    if docker exec serverlog-backend wget --no-verbose --tries=1 --spider http://localhost:3010/health &> /dev/null; then
+    if $SUDO docker exec serverlog-backend wget --no-verbose --tries=1 --spider http://localhost:3010/health &> /dev/null; then
         break
     fi
     sleep 3
@@ -225,7 +291,7 @@ fi
 
 # ─── Create admin user ───────────────────────────────────────────────
 log "Creating admin user..."
-SETUP_OUTPUT=$(docker exec \
+SETUP_OUTPUT=$($SUDO docker exec \
     -e ADMIN_EMAIL="$ADMIN_EMAIL" \
     -e ADMIN_PASSWORD="$ADMIN_PASSWORD" \
     serverlog-backend node scripts/setup.js 2>&1) && SETUP_RC=0 || SETUP_RC=$?
