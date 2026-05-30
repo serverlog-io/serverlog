@@ -497,6 +497,152 @@ function LiveStream() {
   );
 }
 
+function buildSmoothPath(points) {
+  if (points.length < 2) return "";
+  let d = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i - 1] || points[i];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[i + 2] || p2;
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+    d += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+  }
+  return d;
+}
+
+function ChartPreview() {
+  const data = [14, 9, 22, 18, 31, 27, 42, 38, 56, 49, 71, 64, 88, 76, 102];
+  const days = ["May 16", "", "May 18", "", "May 20", "", "May 22", "", "May 24", "", "May 26", "", "May 28", "", "May 30"];
+  const width = 720;
+  const height = 200;
+  const padding = { top: 18, right: 14, bottom: 28, left: 14 };
+  const chartW = width - padding.left - padding.right;
+  const chartH = height - padding.top - padding.bottom;
+  const max = Math.max(...data) * 1.15;
+  const baseY = padding.top + chartH;
+
+  const points = data.map((d, i) => ({
+    x: padding.left + (i / (data.length - 1)) * chartW,
+    y: padding.top + chartH - (d / max) * chartH,
+  }));
+
+  const linePath = buildSmoothPath(points);
+  const last = points[points.length - 1];
+  const first = points[0];
+  const areaPath = `${linePath} L ${last.x.toFixed(2)} ${baseY} L ${first.x.toFixed(2)} ${baseY} Z`;
+
+  const total = data.reduce((a, b) => a + b, 0);
+  const prevTotal = total * 0.88;
+  const deltaPct = Math.round(((total - prevTotal) / prevTotal) * 100);
+
+  const gridY = [0.25, 0.5, 0.75].map((f) => padding.top + chartH * f);
+
+  return (
+    <div className="border border-border bg-bg-elevated/30 rounded-lg overflow-hidden">
+      <div className="flex items-center justify-between gap-4 px-4 py-2.5 border-b border-border">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="text-[0.65rem] font-mono uppercase tracking-[0.18em] text-fg-subtle shrink-0">
+            chart
+          </span>
+          <code className="font-mono text-xs truncate">
+            <span className="text-syntax-key">@alice</span>{" "}
+            <span className="text-syntax-key">plan</span>
+            <span className="text-syntax-punct">:</span>
+            <span className="text-syntax-string">pro</span>{" "}
+            <span className="text-syntax-keyword">#billing</span>{" "}
+            <span className="text-fg-muted">payment</span>
+          </code>
+        </div>
+        <span className="text-[0.65rem] font-mono text-fg-subtle shrink-0">
+          last 15 days
+        </span>
+      </div>
+
+      <div className="px-5 pt-5 pb-1">
+        <div className="flex items-baseline gap-3 flex-wrap">
+          <span className="font-serif text-4xl tracking-tight tabular-nums">
+            {total}
+          </span>
+          <span className="text-sm text-fg-muted">events matched</span>
+          <span className="text-xs font-mono text-syntax-string ml-1">
+            +{deltaPct}% ↑
+          </span>
+        </div>
+        <p className="mt-1 text-xs text-fg-subtle">
+          vs. previous period
+        </p>
+      </div>
+
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        className="w-full h-auto block"
+        preserveAspectRatio="none"
+      >
+        <defs>
+          <linearGradient id="chartFill" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="var(--color-accent)" stopOpacity="0.28" />
+            <stop offset="100%" stopColor="var(--color-accent)" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+
+        {gridY.map((y, i) => (
+          <line
+            key={i}
+            x1={padding.left}
+            x2={width - padding.right}
+            y1={y}
+            y2={y}
+            stroke="var(--color-border)"
+            strokeWidth="1"
+            strokeDasharray="2 4"
+          />
+        ))}
+
+        <path d={areaPath} fill="url(#chartFill)" />
+        <path
+          d={linePath}
+          fill="none"
+          stroke="var(--color-accent)"
+          strokeWidth="1.75"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
+        <circle
+          cx={last.x}
+          cy={last.y}
+          r="10"
+          fill="var(--color-accent)"
+          opacity="0.18"
+        />
+        <circle
+          cx={last.x}
+          cy={last.y}
+          r="3.5"
+          fill="var(--color-bg)"
+          stroke="var(--color-accent)"
+          strokeWidth="1.75"
+        />
+      </svg>
+
+      <div
+        className="grid px-4 pb-3 text-[0.65rem] font-mono text-fg-subtle"
+        style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}
+      >
+        {days.map((d, i) => (
+          <span key={i} className="text-center truncate">
+            {d}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   return (
     <LanguageProvider>
@@ -675,6 +821,14 @@ export default function Home() {
               the event name or description. Save it and you have a
               time-series chart that updates live.
             </p>
+
+            <div className="mt-6 flex items-center gap-3 text-xs font-mono text-fg-subtle">
+              <span className="h-px w-8 bg-border-strong" />
+              <span>saved as chart</span>
+            </div>
+            <div className="mt-3">
+              <ChartPreview />
+            </div>
           </div>
         </section>
 
