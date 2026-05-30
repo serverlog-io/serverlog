@@ -298,9 +298,9 @@ EOF
 
 ok "Configuration written to .env"
 
-# ─── Select Caddyfile ────────────────────────────────────────────────
+# ─── Select Caddyfile (env-driven, doesn't modify tracked files) ─────
 if [ "$USE_CLOUDFLARE" = true ]; then
-    cp deploy/caddy/Caddyfile.cloudflare deploy/caddy/Caddyfile
+    echo "CADDYFILE=Caddyfile.cloudflare" >> .env
     log "Using Cloudflare proxy Caddyfile (TLS off)"
 fi
 
