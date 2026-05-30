@@ -93,6 +93,23 @@ cmd_update() {
     log "Rebuilding and restarting containers..."
     dc up -d --build
 
+    # Refresh the CLI binary if the repo's copy differs from what's installed.
+    # Without this, new commands added to cli/serverlog wouldn't be reachable
+    # until the user manually re-copies the file.
+    local installed_cli="/usr/local/bin/serverlog"
+    local repo_cli="$SERVERLOG_HOME/cli/serverlog"
+    if [ -f "$repo_cli" ] && [ -f "$installed_cli" ] && ! cmp -s "$repo_cli" "$installed_cli"; then
+        log "Updating serverlog CLI..."
+        if [ "$(id -u)" -eq 0 ] || [ -w "$installed_cli" ]; then
+            cp "$repo_cli" "$installed_cli" && chmod 0755 "$installed_cli"
+        elif command -v sudo &>/dev/null; then
+            sudo cp "$repo_cli" "$installed_cli" && sudo chmod 0755 "$installed_cli"
+        else
+            warn "CLI binary at $installed_cli is outdated. Update manually:"
+            warn "  sudo cp $repo_cli $installed_cli"
+        fi
+    fi
+
     ok "Update complete"
 }
 
