@@ -26,16 +26,12 @@ export function LoginForm() {
   };
 
   return (
-    <div className="w-full max-w-sm space-y-6">
-      <div className="space-y-2 text-center">
-        <div className="mb-6 flex justify-center">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white">
-            <span className="text-lg font-bold text-black">S</span>
-          </div>
-        </div>
-        <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
-        <p className="text-sm text-white/50">
-          Sign in to your Serverlog account
+    <div className="w-full max-w-sm space-y-8">
+      <div className="space-y-3 text-center">
+        <div className="font-serif text-2xl tracking-tight text-fg-muted">serverlog</div>
+        <h1 className="font-serif text-3xl tracking-tight">Welcome back</h1>
+        <p className="text-sm text-fg-muted">
+          Sign in to your account
         </p>
       </div>
 
@@ -62,17 +58,17 @@ export function LoginForm() {
           />
         </div>
         {error && (
-          <div className="rounded-md border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+          <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             {error}
           </div>
         )}
         <Button type="submit" className="w-full" disabled={status === "loading"}>
-          {status === "loading" ? "Signing in..." : "Continue"}
+          {status === "loading" ? "Signing in..." : "Continue →"}
         </Button>
       </form>
 
-      <p className="text-center text-xs text-white/30">
-        Serverlog
+      <p className="text-center text-[0.65rem] font-mono uppercase tracking-[0.18em] text-fg-subtle">
+        Self-hosted · Open source
       </p>
     </div>
   );

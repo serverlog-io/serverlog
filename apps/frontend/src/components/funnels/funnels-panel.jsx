@@ -34,11 +34,11 @@ function CustomTooltip({ active, payload }) {
   const data = payload[0].payload;
 
   return (
-    <div className="rounded-lg border border-white/10 bg-black/90 px-3 py-2 shadow-lg">
-      <p className="text-xs font-medium text-white">{data.name}</p>
-      <p className="text-sm text-white/70">{data.count.toLocaleString()} users</p>
+    <div className="rounded-lg border border-border bg-bg-elevated/90 px-3 py-2 shadow-lg">
+      <p className="text-xs font-medium text-fg">{data.name}</p>
+      <p className="text-sm text-fg-muted">{data.count.toLocaleString()} users</p>
       {data.conversion && (
-        <p className="text-xs text-white/50">{data.conversion}% from previous</p>
+        <p className="text-xs text-fg-muted">{data.conversion}% from previous</p>
       )}
     </div>
   );
@@ -47,7 +47,7 @@ function CustomTooltip({ active, payload }) {
 function FunnelChart({ results, overallConversion }) {
   if (!results || results.length === 0) {
     return (
-      <div className="py-12 text-center text-sm text-white/30">
+      <div className="py-12 text-center text-sm text-fg-subtle">
         No data available
       </div>
     );
@@ -63,7 +63,7 @@ function FunnelChart({ results, overallConversion }) {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between text-sm">
-        <span className="text-white/40">Conversion rate</span>
+        <span className="text-fg-subtle">Conversion rate</span>
         <span className="font-medium text-green-400">{overallConversion}%</span>
       </div>
 
@@ -72,7 +72,7 @@ function FunnelChart({ results, overallConversion }) {
         {chartData.map((step, index) => (
           <div key={index}>
             <div className="mb-1 flex items-center justify-between text-sm">
-              <span className="text-white/70">{step.name}</span>
+              <span className="text-fg-muted">{step.name}</span>
               <span className="tabular-nums">{step.count.toLocaleString()}</span>
             </div>
             <div className="h-8">
@@ -90,7 +90,7 @@ function FunnelChart({ results, overallConversion }) {
               </ResponsiveContainer>
             </div>
             {step.conversion && (
-              <div className="mt-1 text-xs text-white/40">{step.conversion}% from previous</div>
+              <div className="mt-1 text-xs text-fg-subtle">{step.conversion}% from previous</div>
             )}
           </div>
         ))}
@@ -135,7 +135,7 @@ function AutocompleteInput({ value, onChange, suggestions, placeholder, classNam
         className={className}
       />
       {open && filtered.length > 0 && (
-        <div className="absolute z-50 mt-1 w-full rounded-md border border-white/10 bg-black/95 py-1 shadow-lg">
+        <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-bg-elevated py-1 shadow-lg">
           {filtered.map((suggestion, i) => (
             <button
               key={i}
@@ -144,7 +144,7 @@ function AutocompleteInput({ value, onChange, suggestions, placeholder, classNam
                 onChange(suggestion);
                 setOpen(false);
               }}
-              className="w-full px-3 py-1.5 text-left text-sm hover:bg-white/10"
+              className="w-full px-3 py-1.5 text-left text-sm hover:bg-bg-elevated"
             >
               {suggestion}
             </button>
@@ -176,7 +176,7 @@ function StepEditor({ steps, onChange, eventSuggestions = [], channelSuggestions
     <div className="space-y-2">
       {steps.map((step, index) => (
         <div key={index} className="flex items-center gap-2">
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-bg-elevated text-xs">
             {index + 1}
           </span>
           <AutocompleteInput
@@ -197,7 +197,7 @@ function StepEditor({ steps, onChange, eventSuggestions = [], channelSuggestions
             <button
               type="button"
               onClick={() => removeStep(index)}
-              className="shrink-0 rounded p-1.5 text-white/30 hover:bg-white/10 hover:text-white/60"
+              className="shrink-0 rounded p-1.5 text-fg-subtle hover:bg-bg-elevated hover:text-fg-muted"
             >
               <Trash2 className="h-4 w-4" />
             </button>
@@ -208,7 +208,7 @@ function StepEditor({ steps, onChange, eventSuggestions = [], channelSuggestions
         <button
           type="button"
           onClick={addStep}
-          className="flex items-center gap-1 text-xs text-white/40 hover:text-white/60"
+          className="flex items-center gap-1 text-xs text-fg-subtle hover:text-fg-muted"
         >
           <Plus className="h-3 w-3" />
           Add step
@@ -283,7 +283,7 @@ function CreateFunnelDialog({ projectId, onCreated }) {
           Create Funnel
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg bg-black border-white/10">
+      <DialogContent className="max-w-lg bg-bg border-border">
         <DialogHeader>
           <DialogTitle>Create Funnel</DialogTitle>
         </DialogHeader>
@@ -327,13 +327,13 @@ function CreateFunnelDialog({ projectId, onCreated }) {
               onChange={(e) => setTimeWindow(parseInt(e.target.value) || 7)}
               className="w-24"
             />
-            <p className="text-xs text-white/40">
+            <p className="text-xs text-fg-subtle">
               Users must complete all steps within this time window
             </p>
           </div>
 
           {error && (
-            <div className="rounded-md border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {error}
             </div>
           )}
@@ -399,17 +399,17 @@ function FunnelCard({ funnel, projectId, onDelete }) {
   };
 
   return (
-    <div className="rounded-lg border border-white/6 bg-white/2">
+    <div className="rounded-lg border border-border bg-bg-elevated/30">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">
         <div>
           <h3 className="font-medium">{funnel.name}</h3>
           {funnel.description && (
-            <p className="text-sm text-white/40">{funnel.description}</p>
+            <p className="text-sm text-fg-subtle">{funnel.description}</p>
           )}
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-white/40">
+          <span className="text-xs text-fg-subtle">
             {funnel.steps.length} steps
           </span>
           <div className="flex gap-0.5">
@@ -419,8 +419,8 @@ function FunnelCard({ funnel, projectId, onDelete }) {
                 onClick={() => handleRangeChange(option.value)}
                 className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
                   selectedRange === option.value
-                    ? "bg-white/10 text-white"
-                    : "text-white/40 hover:text-white/60"
+                    ? "bg-bg-elevated text-fg"
+                    : "text-fg-subtle hover:text-fg-muted"
                 }`}
               >
                 {option.label}
@@ -429,7 +429,7 @@ function FunnelCard({ funnel, projectId, onDelete }) {
           </div>
           <button
             onClick={handleDelete}
-            className="rounded p-1.5 text-white/30 hover:bg-white/10 hover:text-red-400"
+            className="rounded p-1.5 text-fg-subtle hover:bg-bg-elevated hover:text-destructive"
           >
             <Trash2 className="h-4 w-4" />
           </button>
@@ -437,10 +437,10 @@ function FunnelCard({ funnel, projectId, onDelete }) {
       </div>
 
       {/* Content */}
-      <div className="border-t border-white/6 px-4 py-4">
+      <div className="border-t border-border px-4 py-4">
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/10 border-t-white/60" />
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-border border-t-accent" />
           </div>
         ) : results ? (
           <FunnelChart
@@ -448,7 +448,7 @@ function FunnelCard({ funnel, projectId, onDelete }) {
             overallConversion={results.overallConversion}
           />
         ) : (
-          <div className="text-center text-sm text-white/40">
+          <div className="text-center text-sm text-fg-subtle">
             Failed to load funnel data
           </div>
         )}
@@ -487,7 +487,7 @@ export function FunnelsPanel({ projectId }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/10 border-t-white/60" />
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-border border-t-accent" />
       </div>
     );
   }
@@ -497,7 +497,7 @@ export function FunnelsPanel({ projectId }) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-medium">Funnels</h2>
-          <p className="text-sm text-white/40">
+          <p className="text-sm text-fg-subtle">
             Track user conversion through multi-step flows
           </p>
         </div>
@@ -505,10 +505,10 @@ export function FunnelsPanel({ projectId }) {
       </div>
 
       {funnels.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-white/6 bg-white/2 py-16">
-          <div className="mb-4 rounded-full bg-white/4 p-4">
+        <div className="flex flex-col items-center justify-center rounded-lg border border-border bg-bg-elevated/30 py-16">
+          <div className="mb-4 rounded-full bg-bg-elevated/40 p-4">
             <svg
-              className="h-8 w-8 text-white/20"
+              className="h-8 w-8 text-fg-subtle"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -521,8 +521,8 @@ export function FunnelsPanel({ projectId }) {
               />
             </svg>
           </div>
-          <h3 className="mb-1 font-medium text-white/60">No funnels yet</h3>
-          <p className="mb-6 text-sm text-white/30">
+          <h3 className="mb-1 font-medium text-fg-muted">No funnels yet</h3>
+          <p className="mb-6 text-sm text-fg-subtle">
             Create your first funnel to track user conversion
           </p>
           <CreateFunnelDialog projectId={projectId} onCreated={handleCreated} />

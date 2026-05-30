@@ -3,54 +3,49 @@ import Link from "next/link";
 import ProjectApi from "@/api/project.api";
 import { ProtectedLayout } from "@/components/layout/protected-layout";
 import { CreateProjectDialog } from "@/components/projects/create-project-dialog";
-import { Button } from "@/components/ui/button";
 
 function ProjectRow({ project }) {
   return (
     <Link href={`/projects/${project.id}`}>
-      <div className="group flex items-center justify-between border-b border-white/5 px-4 py-4 transition-colors hover:bg-white/[0.02]">
-        <div className="flex items-center gap-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600">
-            <span className="text-sm font-medium text-white">
+      <article className="group rounded-lg border border-border bg-bg-elevated/20 px-5 py-5 transition-all duration-200 hover:border-border-strong hover:bg-bg-elevated/40 hover:-translate-y-px">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-accent/10 border border-accent/20 text-accent font-serif text-lg">
               {project.name.charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <h3 className="font-serif text-xl tracking-tight group-hover:text-accent transition-colors truncate">
+                {project.name}
+              </h3>
+              <p className="text-sm text-fg-muted truncate">
+                {project.description || project.slug}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-5 text-xs font-mono text-fg-subtle shrink-0">
+            <span className="tabular-nums">
+              {project._count?.events || 0} events
+            </span>
+            <span className="tabular-nums">
+              {project._count?.channels || 0} channels
+            </span>
+            <span className="text-fg-subtle opacity-0 group-hover:opacity-100 transition-opacity">
+              →
             </span>
           </div>
-          <div>
-            <h3 className="font-medium text-white group-hover:underline">
-              {project.name}
-            </h3>
-            <p className="text-sm text-white/40">
-              {project.description || project.slug}
-            </p>
-          </div>
         </div>
-        <div className="flex items-center gap-6 text-sm text-white/40">
-          <span>{project._count?.events || 0} events</span>
-          <span>{project._count?.channels || 0} channels</span>
-          <svg
-            className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </div>
-      </div>
+      </article>
     </Link>
   );
 }
 
 function EmptyState({ onCreated }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-white/10 py-16">
-      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-white/5">
-        <svg className="h-6 w-6 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-        </svg>
-      </div>
-      <h3 className="mb-1 text-lg font-medium">No projects yet</h3>
-      <p className="mb-6 text-sm text-white/40">
+    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-20">
+      <h3 className="mb-2 font-serif text-2xl tracking-tight">
+        No projects yet
+      </h3>
+      <p className="mb-8 text-sm text-fg-muted">
         Create your first project to start tracking events
       </p>
       <CreateProjectDialog onCreated={onCreated} />
@@ -81,24 +76,29 @@ export default function DashboardPage() {
 
   return (
     <ProtectedLayout title="Projects">
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">Projects</h1>
+      <div className="space-y-8">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <span className="eyebrow">Workspace</span>
+            <h1 className="mt-3 font-serif text-4xl tracking-tight">
+              Projects
+            </h1>
+          </div>
           {projects.length > 0 && <CreateProjectDialog onCreated={fetchProjects} />}
         </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-border border-t-accent" />
           </div>
         ) : error ? (
-          <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
             {error}
           </div>
         ) : projects.length === 0 ? (
           <EmptyState onCreated={fetchProjects} />
         ) : (
-          <div className="overflow-hidden rounded-lg border border-white/10 bg-white/[0.02]">
+          <div className="space-y-3">
             {projects.map((project) => (
               <ProjectRow key={project.id} project={project} />
             ))}

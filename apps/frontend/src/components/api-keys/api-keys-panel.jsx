@@ -22,10 +22,10 @@ function ApiKeyRow({ apiKey, onRevoke, onDelete }) {
   };
 
   return (
-    <div className="flex items-center justify-between border-b border-white/[0.04] px-4 py-3 last:border-b-0">
+    <div className="flex items-center justify-between border-b border-border px-4 py-3 last:border-b-0">
       <div className="flex items-center gap-3">
-        <div className="flex h-8 w-8 items-center justify-center rounded-md bg-white/[0.04]">
-          <svg className="h-4 w-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="flex h-8 w-8 items-center justify-center rounded-md bg-bg-elevated/50">
+          <svg className="h-4 w-4 text-fg-subtle" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
           </svg>
         </div>
@@ -33,16 +33,16 @@ function ApiKeyRow({ apiKey, onRevoke, onDelete }) {
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">{apiKey.name}</span>
             {!apiKey.isActive && (
-              <span className="rounded bg-red-500/20 px-1.5 py-0.5 text-[10px] font-medium text-red-400">
+              <span className="rounded bg-destructive/20 px-1.5 py-0.5 text-[10px] font-medium text-destructive">
                 revoked
               </span>
             )}
           </div>
           <div className="flex items-center gap-2">
-            <code className="text-xs text-white/30">{apiKey.keyPreview}</code>
+            <code className="text-xs text-fg-subtle">{apiKey.keyPreview}</code>
             <button
               onClick={copyPreview}
-              className="text-[10px] text-white/20 hover:text-white/60"
+              className="text-[10px] text-fg-subtle hover:text-fg-muted"
             >
               {copied ? "copied" : "copy"}
             </button>
@@ -50,18 +50,18 @@ function ApiKeyRow({ apiKey, onRevoke, onDelete }) {
         </div>
       </div>
       <div className="flex items-center gap-3">
-        <span className="text-xs text-white/30">{apiKey.usageCount} requests</span>
+        <span className="text-xs text-fg-subtle">{apiKey.usageCount} requests</span>
         {apiKey.isActive ? (
           <button
             onClick={() => onRevoke(apiKey.id)}
-            className="rounded px-2 py-1 text-xs text-red-400/80 transition-colors hover:bg-red-500/10 hover:text-red-400"
+            className="rounded px-2 py-1 text-xs text-destructive/80 transition-colors hover:bg-destructive/10 hover:text-destructive"
           >
             Revoke
           </button>
         ) : (
           <button
             onClick={() => onDelete(apiKey.id)}
-            className="rounded px-2 py-1 text-xs text-white/40 transition-colors hover:bg-white/5 hover:text-white/60"
+            className="rounded px-2 py-1 text-xs text-fg-subtle transition-colors hover:bg-bg-elevated/40 hover:text-fg-muted"
           >
             Delete
           </button>
@@ -119,7 +119,7 @@ function CreateApiKeyDialog({ open, onOpenChange, projectId, onCreated }) {
               </DialogDescription>
             </DialogHeader>
             <div className="py-4">
-              <div className="rounded-lg border border-white/10 bg-black p-4">
+              <div className="rounded-lg border border-border bg-bg p-4">
                 <code className="break-all text-sm text-green-400">{createdKey}</code>
               </div>
               <Button className="mt-4 w-full" onClick={copyKey}>
@@ -152,7 +152,7 @@ function CreateApiKeyDialog({ open, onOpenChange, projectId, onCreated }) {
                 />
               </div>
               {error && (
-                <div className="rounded-md border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+                <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                   {error}
                 </div>
               )}
@@ -213,7 +213,7 @@ export function ApiKeysPanel({ projectId }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/10 border-t-white/60" />
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-border border-t-accent" />
       </div>
     );
   }
@@ -221,27 +221,27 @@ export function ApiKeysPanel({ projectId }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-white/40">{apiKeys.length} API key{apiKeys.length !== 1 ? "s" : ""}</p>
+        <p className="text-sm text-fg-subtle">{apiKeys.length} API key{apiKeys.length !== 1 ? "s" : ""}</p>
         <Button size="sm" onClick={() => setCreateOpen(true)}>
           New Key
         </Button>
       </div>
 
       {apiKeys.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-white/[0.08] py-16">
-          <div className="mb-4 rounded-full bg-white/[0.04] p-4">
-            <svg className="h-8 w-8 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border-strong py-16">
+          <div className="mb-4 rounded-full bg-bg-elevated/50 p-4">
+            <svg className="h-8 w-8 text-fg-subtle" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
             </svg>
           </div>
-          <h3 className="mb-1 font-medium text-white/60">No API keys</h3>
-          <p className="mb-4 text-sm text-white/30">Create an API key to start sending events</p>
+          <h3 className="mb-1 font-medium text-fg-muted">No API keys</h3>
+          <p className="mb-4 text-sm text-fg-subtle">Create an API key to start sending events</p>
           <Button size="sm" onClick={() => setCreateOpen(true)}>
             Create API Key
           </Button>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-white/[0.06] bg-white/[0.02]">
+        <div className="overflow-hidden rounded-lg border border-border bg-bg-elevated/30">
           {apiKeys.map((apiKey) => (
             <ApiKeyRow
               key={apiKey.id}

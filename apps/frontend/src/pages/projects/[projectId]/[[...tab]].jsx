@@ -79,7 +79,7 @@ export default function ProjectDetailPage() {
     return (
       <ProtectedLayout>
         <div className="flex items-center justify-center py-32">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/10 border-t-white/60" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-accent" />
         </div>
       </ProtectedLayout>
     );
@@ -88,7 +88,7 @@ export default function ProjectDetailPage() {
   if (error || !project) {
     return (
       <ProtectedLayout>
-        <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error || "Project not found"}
         </div>
       </ProtectedLayout>
@@ -113,20 +113,25 @@ export default function ProjectDetailPage() {
         {/* Main Content */}
         <div className="min-w-0 flex-1 space-y-6">
           {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="flex items-end justify-between gap-4">
+            <div className="flex items-end gap-4 min-w-0">
               <Link
                 href="/dashboard"
-                className="flex h-8 w-8 items-center justify-center rounded-md text-white/40 transition-colors hover:bg-white/5 hover:text-white"
+                className="mb-1 flex h-8 w-8 items-center justify-center rounded-md text-fg-subtle transition-colors hover:bg-bg-elevated hover:text-fg"
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </Link>
-              <div>
-                <h1 className="text-lg font-semibold">{project.name}</h1>
+              <div className="min-w-0">
+                <span className="eyebrow">Project</span>
+                <h1 className="mt-2 font-serif text-3xl tracking-tight truncate">
+                  {project.name}
+                </h1>
                 {project.description && (
-                  <p className="text-sm text-white/40">{project.description}</p>
+                  <p className="mt-1 text-sm text-fg-muted truncate">
+                    {project.description}
+                  </p>
                 )}
               </div>
             </div>
@@ -134,27 +139,20 @@ export default function ProjectDetailPage() {
           </div>
 
           {/* Tabs */}
-          <div className="-mx-3 flex gap-1 overflow-x-auto border-b border-white/[0.06] px-3 no-scrollbar sm:mx-0 sm:px-0">
+          <div className="-mx-3 flex gap-1 overflow-x-auto border-b border-border px-3 no-scrollbar sm:mx-0 sm:px-0">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => handleTabChange(tab.id)}
-                className={`relative flex shrink-0 items-center gap-2 whitespace-nowrap px-4 py-2.5 text-sm font-medium transition-colors ${
+                className={`relative flex shrink-0 items-center gap-2 whitespace-nowrap px-4 py-2.5 text-sm transition-colors ${
                   activeTab === tab.id
-                    ? "text-white"
-                    : "text-white/40 hover:text-white/60"
+                    ? "text-fg"
+                    : "text-fg-subtle hover:text-fg-muted"
                 }`}
               >
                 {tab.label}
-                {tab.count !== undefined && (
-                  <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${
-                    activeTab === tab.id ? "bg-white/10" : "bg-white/[0.04]"
-                  }`}>
-                    {tab.count}
-                  </span>
-                )}
                 {activeTab === tab.id && (
-                  <span className="absolute bottom-0 left-0 right-0 h-px bg-white" />
+                  <span className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-accent" />
                 )}
               </button>
             ))}
@@ -195,7 +193,7 @@ export default function ProjectDetailPage() {
       {activeTab === "events" && !isPlaygroundOpen && (
         <button
           onClick={() => setIsPlaygroundOpen(true)}
-          className="fixed bottom-6 right-6 z-50 flex h-12 items-center gap-2 rounded-full bg-white px-5 text-sm font-medium text-black shadow-lg transition-all hover:scale-105 hover:shadow-xl"
+          className="fixed bottom-6 right-6 z-40 flex h-12 items-center gap-2 rounded-full bg-accent px-5 text-sm font-medium text-fg shadow-[0_0_40px_-10px_rgba(217,119,87,0.7)] transition-all hover:scale-105 hover:bg-accent-hover"
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />

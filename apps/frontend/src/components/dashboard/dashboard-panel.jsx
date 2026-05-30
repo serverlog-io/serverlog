@@ -42,7 +42,7 @@ function SortableChart({ chart, projectId, onDelete, onUpdate, chartRef }) {
       <button
         {...attributes}
         {...listeners}
-        className="absolute -left-2 top-1/2 -translate-y-1/2 z-10 p-1.5 rounded-md bg-white/5 text-white/30 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing hover:bg-white/10 hover:text-white/50"
+        className="absolute -left-2 top-1/2 -translate-y-1/2 z-10 p-1.5 rounded-md bg-bg-elevated/40 text-fg-subtle opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing hover:bg-bg-elevated hover:text-fg-muted"
         title="Drag to reorder"
       >
         <GripVertical className="h-4 w-4" />
@@ -143,7 +143,7 @@ export function DashboardPanel({ projectId }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/10 border-t-white/60" />
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-border border-t-accent" />
       </div>
     );
   }
@@ -151,13 +151,13 @@ export function DashboardPanel({ projectId }) {
   if (charts.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
-        <div className="mb-4 rounded-full bg-white/[0.04] p-4">
-          <svg className="h-8 w-8 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="mb-4 rounded-full bg-bg-elevated/50 p-4">
+          <svg className="h-8 w-8 text-fg-subtle" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
           </svg>
         </div>
-        <h3 className="mb-1 font-medium text-white/60">No charts yet</h3>
-        <p className="mb-2 text-sm text-white/30 text-center max-w-sm">
+        <h3 className="mb-1 font-medium text-fg-muted">No charts yet</h3>
+        <p className="mb-2 text-sm text-fg-subtle text-center max-w-sm">
           Save charts from the Events tab by applying filters and clicking "Save to Dashboard"
         </p>
       </div>

@@ -38,8 +38,8 @@ export default function LoginPage() {
 
   if (status === "loading" || needsSetup === null) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-black">
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-border border-t-accent" />
       </div>
     );
   }
@@ -50,7 +50,7 @@ export default function LoginPage() {
 
   return (
     <PublicLayout title="Login">
-      <div className="flex min-h-screen flex-col items-center justify-center bg-black p-4">
+      <div className="flex min-h-screen flex-col items-center justify-center p-4">
         {needsSetup ? <SetupForm /> : <LoginForm />}
       </div>
     </PublicLayout>

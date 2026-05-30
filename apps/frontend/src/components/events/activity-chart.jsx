@@ -1,20 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useImperativeHandle, forwardRef } from "react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
-import { format, subHours, subDays, subMinutes } from "date-fns";
+import { subHours, subDays, subMinutes } from "date-fns";
 import EventApi from "@/api/event.api";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { TimeseriesChart } from "@/components/charts/timeseries-chart";
 
 const RANGE_OPTIONS = [
   { label: "1m", value: "1m", getRange: () => ({ start: subMinutes(new Date(), 1), end: new Date() }) },
@@ -40,44 +27,6 @@ function getBucketKey(date, interval) {
   return d.toISOString();
 }
 
-function formatXAxis(timestamp, interval) {
-  const date = new Date(timestamp);
-  if (interval === "second") {
-    return format(date, "HH:mm:ss");
-  } else if (interval === "minute") {
-    return format(date, "HH:mm");
-  } else if (interval === "hour") {
-    return format(date, "HH:mm");
-  } else {
-    return format(date, "MMM d");
-  }
-}
-
-function CustomTooltip({ active, payload, label, interval }) {
-  if (!active || !payload || !payload.length) return null;
-
-  const date = new Date(label);
-  let formattedDate;
-  if (interval === "second") {
-    formattedDate = format(date, "HH:mm:ss");
-  } else if (interval === "minute") {
-    formattedDate = format(date, "MMM d, HH:mm");
-  } else if (interval === "hour") {
-    formattedDate = format(date, "MMM d, HH:00");
-  } else {
-    formattedDate = format(date, "MMM d, yyyy");
-  }
-
-  return (
-    <div className="rounded-lg border border-white/10 bg-black/90 px-3 py-2 shadow-lg">
-      <p className="text-xs text-white/50">{formattedDate}</p>
-      <p className="text-sm font-medium text-white">
-        {payload[0].value} event{payload[0].value !== 1 ? "s" : ""}
-      </p>
-    </div>
-  );
-}
-
 export const ActivityChart = forwardRef(function ActivityChart(
   { projectId, channelFilter, userFilter, searchQuery, searchTags },
   ref
@@ -90,17 +39,14 @@ export const ActivityChart = forwardRef(function ActivityChart(
   const intervalRef = useRef("hour");
   const lastFetchParams = useRef(null);
 
-  // Expose addEvent method to parent
   useImperativeHandle(ref, () => ({
     addEvent: (eventTimestamp) => {
       const bucketKey = getBucketKey(eventTimestamp, intervalRef.current);
 
       setData((prevData) => {
-        // Check if bucket already exists
         const bucketIndex = prevData.findIndex((bucket) => bucket.timestamp === bucketKey);
 
         if (bucketIndex !== -1) {
-          // Increment existing bucket
           const newData = [...prevData];
           newData[bucketIndex] = {
             ...newData[bucketIndex],
@@ -109,17 +55,14 @@ export const ActivityChart = forwardRef(function ActivityChart(
           return newData;
         }
 
-        // Bucket doesn't exist - check if event is newer than current range
         if (prevData.length > 0) {
           const lastBucket = prevData[prevData.length - 1];
           if (new Date(bucketKey) > new Date(lastBucket.timestamp)) {
-            // Slide the window: remove oldest bucket, add new one at the end
             const newBucket = { timestamp: bucketKey, count: 1 };
             return [...prevData.slice(1), newBucket];
           }
         }
 
-        // Event is older than current range, ignore
         return prevData;
       });
 
@@ -130,7 +73,6 @@ export const ActivityChart = forwardRef(function ActivityChart(
   const fetchTimeline = useCallback(async (force = false, showLoading = true) => {
     if (!projectId) return;
 
-    // Build params key to check if we need to refetch
     const paramsKey = JSON.stringify({
       projectId,
       channelFilter,
@@ -140,12 +82,10 @@ export const ActivityChart = forwardRef(function ActivityChart(
       selectedRange,
     });
 
-    // Skip if params haven't changed (unless forced)
     if (!force && lastFetchParams.current === paramsKey && data.length > 0) {
       return;
     }
 
-    // Show loading skeleton when filters change
     if (showLoading) {
       setLoading(true);
     }
@@ -161,18 +101,10 @@ export const ActivityChart = forwardRef(function ActivityChart(
         endDate: range.end.toISOString(),
       };
 
-      if (channelFilter) {
-        params.channel = channelFilter;
-      }
-      if (userFilter) {
-        params.userId = userFilter;
-      }
-      if (searchQuery) {
-        params.search = searchQuery;
-      }
-      if (searchTags) {
-        params.tags = searchTags;
-      }
+      if (channelFilter) params.channel = channelFilter;
+      if (userFilter) params.userId = userFilter;
+      if (searchQuery) params.search = searchQuery;
+      if (searchTags) params.tags = searchTags;
 
       const { data: response } = await EventApi.getTimeline(projectId, params);
       setData(response.data || []);
@@ -191,18 +123,13 @@ export const ActivityChart = forwardRef(function ActivityChart(
     fetchTimeline();
   }, [fetchTimeline]);
 
-  // Auto-refresh: skip for 1m range (use socket events + slide window instead), 60 seconds otherwise
   useEffect(() => {
-    // For 1m range, don't poll - rely on socket events and slide window for real-time updates
     if (selectedRange === "1m") return;
-
     const timer = setInterval(() => fetchTimeline(true, false), 60000);
     return () => clearInterval(timer);
   }, [fetchTimeline, selectedRange]);
 
-  // Slide window forward as time passes (only for short intervals, not daily)
   useEffect(() => {
-    // Skip slide window for daily intervals (7d, 30d)
     if (intervalRef.current === "day") return;
 
     const timer = setInterval(() => {
@@ -212,11 +139,9 @@ export const ActivityChart = forwardRef(function ActivityChart(
         const currentBucketKey = getBucketKey(new Date(), intervalRef.current);
         const lastBucket = prevData[prevData.length - 1];
 
-        // Check if bucket already exists (prevent duplicates)
         const bucketExists = prevData.some((d) => d.timestamp === currentBucketKey);
         if (bucketExists) return prevData;
 
-        // If current time is in a newer bucket, slide the window
         if (new Date(currentBucketKey) > new Date(lastBucket.timestamp)) {
           const newBucket = { timestamp: currentBucketKey, count: 0 };
           return [...prevData.slice(1), newBucket];
@@ -229,77 +154,44 @@ export const ActivityChart = forwardRef(function ActivityChart(
     return () => clearInterval(timer);
   }, [interval]);
 
-  const renderChartLoading = () => (
-    <div className="flex h-full items-center justify-center">
-      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/10 border-t-white/40" />
-    </div>
-  );
-
   return (
-    <div className="mb-4 rounded-lg border border-white/6 bg-white/2 p-4">
-      <div className="mb-3 flex items-center gap-3">
-        <span className="shrink-0 text-sm font-medium text-white/70">Activity</span>
-        <span className="shrink-0 text-xs text-white/40">
-          {totalEvents} event{totalEvents !== 1 ? "s" : ""}
-        </span>
-        <div className="flex-1" />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="flex shrink-0 items-center gap-1.5 rounded-md border border-white/10 px-2.5 py-1 text-xs font-medium text-white/60 transition-colors hover:text-white hover:bg-white/5">
-              {RANGE_OPTIONS.find((r) => r.value === selectedRange)?.label}
-              <svg className="h-3 w-3 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
+    <div className="mb-4 rounded-lg border border-border bg-bg-elevated/30">
+      <div className="flex items-center justify-between gap-4 px-4 py-2.5 border-b border-border">
+        <div className="flex items-center gap-3">
+          <span className="text-[0.65rem] font-mono uppercase tracking-[0.18em] text-fg-subtle">
+            activity
+          </span>
+          <span className="font-mono text-xs text-fg-muted tabular-nums">
+            {totalEvents} event{totalEvents !== 1 ? "s" : ""}
+          </span>
+        </div>
+        <div className="flex items-center gap-0.5">
+          {RANGE_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              onClick={() => setSelectedRange(option.value)}
+              className={`px-2 py-1 text-xs font-mono rounded transition-colors ${
+                selectedRange === option.value
+                  ? "bg-bg-elevated text-fg border border-border-strong"
+                  : "text-fg-subtle hover:text-fg-muted border border-transparent"
+              }`}
+            >
+              {option.label}
             </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {RANGE_OPTIONS.map((option) => (
-              <DropdownMenuItem
-                key={option.value}
-                onClick={() => setSelectedRange(option.value)}
-                className={selectedRange === option.value ? "bg-white/10 text-white" : ""}
-              >
-                {option.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+          ))}
+        </div>
       </div>
 
-      <div className="h-[180px]">
-        {loading ? (
-          renderChartLoading()
-        ) : data.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-              <XAxis
-                dataKey="timestamp"
-                tickFormatter={(t) => formatXAxis(t, interval)}
-                tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }}
-                axisLine={false}
-                tickLine={false}
-                minTickGap={50}
-              />
-              <YAxis
-                tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }}
-                axisLine={false}
-                tickLine={false}
-                allowDecimals={false}
-              />
-              <Tooltip content={<CustomTooltip interval={interval} />} cursor={{ fill: "rgba(255,255,255,0.05)" }} />
-              <Bar
-                dataKey="count"
-                fill="#6366f1"
-                radius={[2, 2, 0, 0]}
-                isAnimationActive={false}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        ) : (
-          <div className="flex h-full items-center justify-center text-xs text-white/30">
-            No activity in this time range
-          </div>
-        )}
+      <div className="px-2 pb-2 pt-2">
+        <TimeseriesChart
+          data={data}
+          interval={interval}
+          chartType="BAR"
+          color="#d97757"
+          loading={loading}
+          height={160}
+          emptyText="No activity in this time range"
+        />
       </div>
     </div>
   );

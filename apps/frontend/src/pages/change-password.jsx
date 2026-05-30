@@ -50,7 +50,7 @@ export default function ChangePasswordPage() {
 
   if (status === "loading" || !user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-black">
+      <div className="flex min-h-screen items-center justify-center bg-bg">
         <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white" />
       </div>
     );
@@ -58,7 +58,7 @@ export default function ChangePasswordPage() {
 
   return (
     <PublicLayout title="Change Password">
-      <div className="flex min-h-screen flex-col items-center justify-center bg-black p-4">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-bg p-4">
         <div className="w-full max-w-sm space-y-6">
         <div className="space-y-2 text-center">
           <div className="mb-6 flex justify-center">

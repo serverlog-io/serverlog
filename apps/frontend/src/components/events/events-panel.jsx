@@ -128,24 +128,15 @@ function HighlightedQuery({ query }) {
     <>
       {parts.map((part, i) =>
         part.type === "channel" ? (
-          <span
-            key={i}
-            className="rounded bg-purple-500/30 text-purple-300"
-          >
+          <span key={i} className="text-syntax-keyword">
             {part.content}
           </span>
         ) : part.type === "user" ? (
-          <span
-            key={i}
-            className="rounded bg-emerald-500/30 text-emerald-300"
-          >
+          <span key={i} className="text-syntax-string">
             {part.content}
           </span>
         ) : part.type === "tag" ? (
-          <span
-            key={i}
-            className="rounded bg-blue-500/30 text-blue-300"
-          >
+          <span key={i} className="text-syntax-key">
             {part.content}
           </span>
         ) : (
@@ -160,7 +151,7 @@ function SearchBar({ value, onChange }) {
   return (
     <div className="relative">
       <svg
-        className="absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-white/30"
+        className="absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-fg-subtle"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -172,12 +163,11 @@ function SearchBar({ value, onChange }) {
           d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
         />
       </svg>
-      {/* Highlighted overlay */}
       <div
         className="pointer-events-none absolute inset-0 flex items-center pl-10 pr-10 text-sm text-transparent"
         aria-hidden="true"
       >
-        <div className="truncate">
+        <div className="truncate font-mono">
           <HighlightedQuery query={value} />
         </div>
       </div>
@@ -186,22 +176,21 @@ function SearchBar({ value, onChange }) {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Search events... (#channel, @userId, key:value)"
-        className="relative h-9 w-full rounded-lg border border-white/10 bg-white/[0.02] pl-10 pr-10 text-sm text-white caret-white placeholder:text-white/30 focus:border-white/20 focus:outline-none"
-        style={{ color: "transparent", caretColor: "white" }}
+        className="relative h-9 w-full rounded-md border border-border bg-bg-elevated/40 pl-10 pr-10 text-sm font-mono caret-fg placeholder:text-fg-subtle focus:border-accent/50 focus:bg-bg-elevated/60 focus:outline-none transition-colors"
+        style={{ color: "transparent", caretColor: "var(--color-fg)" }}
       />
-      {/* Visible text layer */}
       <div
         className="pointer-events-none absolute inset-0 flex items-center pl-10 pr-10 text-sm"
         aria-hidden="true"
       >
-        <div className="truncate text-white">
+        <div className="truncate font-mono text-fg">
           <HighlightedQuery query={value} />
         </div>
       </div>
       {value && (
         <button
           onClick={() => onChange("")}
-          className="absolute right-3 top-1/2 z-10 -translate-y-1/2 text-white/30 hover:text-white/50"
+          className="absolute right-3 top-1/2 z-10 -translate-y-1/2 text-fg-subtle hover:text-fg transition-colors"
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -214,21 +203,21 @@ function SearchBar({ value, onChange }) {
 
 function EventsListSkeleton() {
   return (
-    <div className="overflow-hidden rounded-lg border border-white/[0.06] bg-white/[0.02]">
+    <div className="overflow-hidden rounded-lg border border-border bg-bg-elevated/20">
       {[...Array(8)].map((_, i) => (
         <div
           key={i}
-          className="flex items-start gap-3 border-b border-white/[0.04] px-4 py-3 last:border-b-0"
+          className="flex items-start gap-3 border-b border-border px-4 py-3 last:border-b-0"
         >
-          <div className="h-8 w-8 animate-pulse rounded-lg bg-white/10" />
+          <div className="h-8 w-8 animate-pulse rounded-md bg-bg-elevated" />
           <div className="flex-1 space-y-2">
             <div className="flex items-center gap-2">
-              <div className="h-4 w-24 animate-pulse rounded bg-white/10" />
-              <div className="h-3 w-16 animate-pulse rounded bg-white/5" />
+              <div className="h-4 w-24 animate-pulse rounded bg-bg-elevated" />
+              <div className="h-3 w-16 animate-pulse rounded bg-bg-elevated/60" />
             </div>
-            <div className="h-3 w-48 animate-pulse rounded bg-white/5" />
+            <div className="h-3 w-48 animate-pulse rounded bg-bg-elevated/60" />
           </div>
-          <div className="h-3 w-12 animate-pulse rounded bg-white/5" />
+          <div className="h-3 w-12 animate-pulse rounded bg-bg-elevated/60" />
         </div>
       ))}
     </div>
@@ -237,23 +226,12 @@ function EventsListSkeleton() {
 
 function EventsEmptyState({ onOpenPlayground }) {
   return (
-    <div className="flex flex-col items-center justify-center py-20">
-      <div className="mb-4 rounded-full bg-white/[0.04] p-4">
-        <svg className="h-8 w-8 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-        </svg>
-      </div>
-      <h3 className="mb-1 font-medium text-white/60">No events yet</h3>
-      <p className="mb-6 text-sm text-white/30">Events will appear here when you start sending them</p>
-
-      <div className="flex gap-3">
-        <Button variant="default" size="sm" onClick={onOpenPlayground}>
-          <svg className="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-          Send your first event
-        </Button>
-      </div>
+    <div className="flex flex-col items-center justify-center py-20 rounded-lg border border-dashed border-border">
+      <h3 className="font-serif text-2xl tracking-tight">No events yet</h3>
+      <p className="mt-2 mb-8 text-sm text-fg-muted">Events will appear here when you start sending them</p>
+      <Button variant="default" size="sm" onClick={onOpenPlayground}>
+        Send your first event →
+      </Button>
     </div>
   );
 }
@@ -659,10 +637,10 @@ export function EventsPanel({ projectId, onOpenPlayground }) {
               <div className="min-w-0 flex-1">
                 <SearchBar value={searchQuery} onChange={setSearchQuery} />
               </div>
-              <div className="flex h-9 shrink-0 rounded-md border border-white/10 overflow-hidden">
+              <div className="flex h-9 shrink-0 rounded-md border border-border overflow-hidden">
                 <button
                   onClick={() => setViewMode('cards')}
-                  className={`px-2.5 transition-colors ${viewMode === 'cards' ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60 hover:bg-white/[0.04]'}`}
+                  className={`px-2.5 transition-colors ${viewMode === 'cards' ? 'bg-bg-elevated text-fg' : 'text-fg-subtle hover:text-fg hover:bg-bg-elevated/50'}`}
                   title="Card view"
                 >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -671,7 +649,7 @@ export function EventsPanel({ projectId, onOpenPlayground }) {
                 </button>
                 <button
                   onClick={() => setViewMode('compact')}
-                  className={`px-2.5 transition-colors ${viewMode === 'compact' ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/60 hover:bg-white/[0.04]'}`}
+                  className={`px-2.5 transition-colors ${viewMode === 'compact' ? 'bg-bg-elevated text-fg' : 'text-fg-subtle hover:text-fg hover:bg-bg-elevated/50'}`}
                   title="Compact view"
                 >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -683,7 +661,7 @@ export function EventsPanel({ projectId, onOpenPlayground }) {
                 <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
                   <DialogTrigger asChild>
                     <button
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-white/10 text-white/40 transition-colors hover:text-white hover:bg-white/5"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border text-fg-subtle hover:text-fg hover:border-border-strong transition-colors"
                       title="Save to Dashboard"
                     >
                       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -691,23 +669,22 @@ export function EventsPanel({ projectId, onOpenPlayground }) {
                       </svg>
                     </button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-md bg-black border-white/10">
+                  <DialogContent className="max-w-md">
                     <DialogHeader>
                       <DialogTitle>Save chart to dashboard</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4 pt-4">
                       <div className="space-y-2">
-                        <label className="text-sm text-white/60">Chart name</label>
+                        <label className="text-xs font-mono uppercase tracking-[0.18em] text-fg-subtle">Chart name</label>
                         <Input
                           value={chartName}
                           onChange={(e) => setChartName(e.target.value)}
                           placeholder="e.g., Pro Plan Signups"
-                          className="bg-white/5 border-white/10"
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm text-white/60">Filter</label>
-                        <div className="rounded-md bg-white/5 border border-white/10 px-3 py-2 text-sm text-white/80">
+                        <label className="text-xs font-mono uppercase tracking-[0.18em] text-fg-subtle">Filter</label>
+                        <div className="rounded-md bg-bg-elevated/40 border border-border px-3 py-2 text-sm font-mono text-fg-muted">
                           {debouncedSearch || "(all events)"}
                         </div>
                       </div>
@@ -716,7 +693,6 @@ export function EventsPanel({ projectId, onOpenPlayground }) {
                           variant="outline"
                           size="sm"
                           onClick={() => setSaveDialogOpen(false)}
-                          className="border-white/10"
                         >
                           Cancel
                         </Button>
@@ -753,25 +729,22 @@ export function EventsPanel({ projectId, onOpenPlayground }) {
         ) : (
           <div className="space-y-3">
             {events.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 rounded-lg border border-white/[0.06] bg-white/[0.02]">
-                <svg className="h-8 w-8 text-white/20 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <p className="text-sm text-white/40">
+              <div className="flex flex-col items-center justify-center py-16 rounded-lg border border-dashed border-border">
+                <p className="text-sm text-fg-muted">
                   {debouncedSearch ? "No events match your search" : "No events in this channel"}
                 </p>
                 {debouncedSearch && (
                   <button
                     onClick={() => setSearchQuery("")}
-                    className="mt-2 text-xs text-white/30 hover:text-white/50"
+                    className="mt-3 text-xs font-mono text-fg-subtle hover:text-fg transition-colors"
                   >
-                    Clear search
+                    Clear search →
                   </button>
                 )}
               </div>
             ) : (
               <>
-                <div className="overflow-hidden rounded-lg border border-white/[0.06] bg-white/[0.02]">
+                <div className="overflow-hidden rounded-lg border border-border bg-bg-elevated/20">
                   {events.map((event) => (
                     <EventRow
                       key={event.id}
@@ -792,8 +765,8 @@ export function EventsPanel({ projectId, onOpenPlayground }) {
                   className="flex items-center justify-center py-4"
                 >
                   {loadingMore && (
-                    <div className="flex items-center gap-2 text-sm text-white/40">
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/10 border-t-white/40" />
+                    <div className="flex items-center gap-2 text-sm text-fg-muted">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-border border-t-accent" />
                       Loading more...
                     </div>
                   )}
@@ -801,7 +774,7 @@ export function EventsPanel({ projectId, onOpenPlayground }) {
 
                 {/* Events count */}
                 {!hasMore && events.length > 0 && (
-                  <div className="py-3 text-center text-xs text-white/30">
+                  <div className="py-3 text-center text-xs font-mono text-fg-subtle">
                     {pagination.total} events{debouncedSearch ? " found" : " total"}
                   </div>
                 )}
@@ -815,36 +788,32 @@ export function EventsPanel({ projectId, onOpenPlayground }) {
       <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-red-400">
+            <DialogTitle className="text-destructive">
               Delete {deleteTarget?.type === 'channel' ? 'channel' : 'event'}
             </DialogTitle>
             <DialogDescription>
               {deleteTarget?.type === 'channel' ? (
                 <>
-                  This will permanently delete the channel <strong className="text-white">&quot;{deleteTarget?.data?.name}&quot;</strong> and
-                  all <strong className="text-white">{deleteTarget?.data?._count?.events || 0} events</strong> inside it.
+                  This will permanently delete the channel <strong className="text-fg">&quot;{deleteTarget?.data?.name}&quot;</strong> and
+                  all <strong className="text-fg">{deleteTarget?.data?._count?.events || 0} events</strong> inside it.
                   This action cannot be undone.
                 </>
               ) : (
                 <>
-                  This will permanently delete the event <strong className="text-white">&quot;{deleteTarget?.data?.event}&quot;</strong>.
+                  This will permanently delete the event <strong className="text-fg">&quot;{deleteTarget?.data?.event}&quot;</strong>.
                   This action cannot be undone.
                 </>
               )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              onClick={() => setDeleteTarget(null)}
-              disabled={deleting}
-            >
+            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={deleting}>
               Cancel
             </Button>
             <Button
               onClick={confirmDelete}
               disabled={deleting}
-              className="bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20"
+              variant="destructive"
             >
               {deleting ? "Deleting..." : "Delete permanently"}
             </Button>

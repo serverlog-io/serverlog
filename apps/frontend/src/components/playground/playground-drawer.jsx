@@ -33,13 +33,13 @@ function IconPicker({ value, onChange }) {
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="flex h-8 w-full items-center justify-between rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition-colors hover:border-white/20"
+          className="flex h-8 w-full items-center justify-between rounded-md border border-border bg-bg-elevated/40 px-3 py-2 text-sm text-fg transition-colors hover:border-border-strong"
         >
-          <span className={value ? "text-base" : "text-white/30 text-xs"}>
+          <span className={value ? "text-base" : "text-fg-subtle text-xs"}>
             {value || "Select"}
           </span>
           <svg
-            className={`h-3 w-3 text-white/40 transition-transform ${isOpen ? "rotate-180" : ""}`}
+            className={`h-3 w-3 text-fg-subtle transition-transform ${isOpen ? "rotate-180" : ""}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -59,18 +59,18 @@ function IconPicker({ value, onChange }) {
           skinTonesDisabled
           lazyLoadEmojis
         />
-        <div className="border-t border-white/10 p-2">
+        <div className="border-t border-border p-2">
           <form onSubmit={handleCustomSubmit} className="flex gap-2">
             <input
               type="text"
               value={customInput}
               onChange={(e) => setCustomInput(e.target.value)}
               placeholder="Custom emoji"
-              className="flex-1 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-sm text-white placeholder:text-white/30"
+              className="flex-1 rounded-md border border-border bg-bg-elevated/40 px-2 py-1 text-sm text-fg placeholder:text-fg-subtle"
             />
             <button
               type="submit"
-              className="rounded-md bg-white/10 px-2 py-1 text-sm text-white hover:bg-white/20"
+              className="rounded-md bg-bg-elevated px-2 py-1 text-sm text-fg hover:bg-bg-elevated"
             >
               Add
             </button>
@@ -131,11 +131,11 @@ function ChannelCombobox({ value, onChange, channels = [] }) {
         onChange={handleInputChange}
         onFocus={() => setIsOpen(true)}
         placeholder="alerts"
-        className="h-8 w-full rounded-md border border-white/10 bg-white/5 px-3 text-sm text-white placeholder:text-white/30 focus:border-white/20 focus:outline-none"
+        className="h-8 w-full rounded-md border border-border bg-bg-elevated/40 px-3 text-sm text-fg placeholder:text-fg-subtle focus:border-border-strong focus:outline-none"
         required
       />
       {isOpen && (
-        <div className="absolute top-full left-0 z-50 mt-1 w-[200px] rounded-md border border-white/10 bg-[#1a1a1a] p-1 shadow-xl">
+        <div className="absolute top-full left-0 z-50 mt-1 w-[200px] rounded-md border border-border bg-bg-elevated p-1 shadow-xl">
           {filteredChannels.length > 0 ? (
             <div className="max-h-[200px] overflow-auto">
               {filteredChannels.map((ch) => (
@@ -143,24 +143,24 @@ function ChannelCombobox({ value, onChange, channels = [] }) {
                   key={ch.id}
                   type="button"
                   onClick={() => handleSelect(ch.slug)}
-                  className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-white/70 hover:bg-white/10"
+                  className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-fg-muted hover:bg-bg-elevated"
                 >
                   <span
                     className="h-2 w-2 rounded-full"
                     style={{ backgroundColor: ch.color || "#6366f1" }}
                   />
                   <span className="flex-1 truncate">{ch.name}</span>
-                  <span className="text-[10px] text-white/30">{ch.slug}</span>
+                  <span className="text-[10px] text-fg-subtle">{ch.slug}</span>
                 </button>
               ))}
             </div>
           ) : (
-            <div className="px-2 py-3 text-center text-xs text-white/40">
+            <div className="px-2 py-3 text-center text-xs text-fg-subtle">
               {channels.length === 0 ? "No channels yet" : "No matches"}
             </div>
           )}
           {inputValue && !channels.some((ch) => ch.slug === inputValue) && (
-            <div className="border-t border-white/10 px-2 py-1.5 text-[10px] text-white/40">
+            <div className="border-t border-border px-2 py-1.5 text-[10px] text-fg-subtle">
               Press Enter to create "{inputValue}"
             </div>
           )}
@@ -194,19 +194,19 @@ function TagsEditor({ tags, onChange }) {
             value={tag.key}
             onChange={(e) => updateTag(index, "key", e.target.value)}
             placeholder="key"
-            className="h-8 w-1/3 rounded-md border border-white/10 bg-white/5 px-2 text-xs text-white placeholder:text-white/30 focus:border-white/20 focus:outline-none font-mono"
+            className="h-8 w-1/3 rounded-md border border-border bg-bg-elevated/40 px-2 text-xs text-fg placeholder:text-fg-subtle focus:border-border-strong focus:outline-none font-mono"
           />
           <input
             type="text"
             value={tag.value}
             onChange={(e) => updateTag(index, "value", e.target.value)}
             placeholder="value"
-            className="h-8 flex-1 rounded-md border border-white/10 bg-white/5 px-2 text-xs text-white placeholder:text-white/30 focus:border-white/20 focus:outline-none font-mono"
+            className="h-8 flex-1 rounded-md border border-border bg-bg-elevated/40 px-2 text-xs text-fg placeholder:text-fg-subtle focus:border-border-strong focus:outline-none font-mono"
           />
           <button
             type="button"
             onClick={() => removeTag(index)}
-            className="h-8 w-8 shrink-0 rounded-md text-white/30 hover:bg-white/5 hover:text-white/60 transition-colors"
+            className="h-8 w-8 shrink-0 rounded-md text-fg-subtle hover:bg-bg-elevated/40 hover:text-fg-muted transition-colors"
           >
             <svg className="h-4 w-4 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -217,7 +217,7 @@ function TagsEditor({ tags, onChange }) {
       <button
         type="button"
         onClick={addTag}
-        className="flex items-center gap-1 text-[10px] text-white/40 hover:text-white/60 transition-colors"
+        className="flex items-center gap-1 text-[10px] text-fg-subtle hover:text-fg-muted transition-colors"
       >
         <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -346,18 +346,18 @@ response = requests.post(
   };
 
   const content = (
-    <div className={inline ? "flex flex-col h-full rounded-lg border border-white/10 bg-[#0a0a0a]" : "flex h-full flex-col"}>
+    <div className={inline ? "flex flex-col h-full rounded-lg border border-border bg-bg-elevated" : "flex h-full flex-col"}>
       {/* Header */}
-      <div className={`flex items-center justify-between border-b border-white/10 px-4 py-3 ${inline ? "rounded-t-lg" : ""}`}>
+      <div className={`flex items-center justify-between border-b border-border px-4 py-3 ${inline ? "rounded-t-lg" : ""}`}>
         <div className="flex items-center gap-2">
-          <svg className="h-5 w-5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="h-5 w-5 text-fg-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
           <h2 className="font-medium">Playground</h2>
         </div>
         <button
           onClick={onClose}
-          className="rounded-md p-1.5 text-white/40 transition-colors hover:bg-white/10 hover:text-white"
+          className="rounded-md p-1.5 text-fg-subtle transition-colors hover:bg-bg-elevated hover:text-fg"
         >
           <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -366,11 +366,11 @@ response = requests.post(
       </div>
 
       {/* Form Section */}
-      <div className="border-b border-white/10 p-4">
+      <div className="border-b border-border p-4">
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <Label className="text-xs text-white/50">Channel</Label>
+              <Label className="text-xs text-fg-muted">Channel</Label>
               <ChannelCombobox
                 value={channel}
                 onChange={setChannel}
@@ -378,7 +378,7 @@ response = requests.post(
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="drawer-event" className="text-xs text-white/50">Event</Label>
+              <Label htmlFor="drawer-event" className="text-xs text-fg-muted">Event</Label>
               <Input
                 id="drawer-event"
                 value={event}
@@ -391,7 +391,7 @@ response = requests.post(
           </div>
 
           <div className="space-y-1">
-            <Label htmlFor="drawer-description" className="text-xs text-white/50">Description</Label>
+            <Label htmlFor="drawer-description" className="text-xs text-fg-muted">Description</Label>
             <Input
               id="drawer-description"
               value={description}
@@ -403,7 +403,7 @@ response = requests.post(
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <Label htmlFor="drawer-user-id" className="text-xs text-white/50">User ID</Label>
+              <Label htmlFor="drawer-user-id" className="text-xs text-fg-muted">User ID</Label>
               <Input
                 id="drawer-user-id"
                 value={userId}
@@ -413,18 +413,18 @@ response = requests.post(
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs text-white/50">Icon</Label>
+              <Label className="text-xs text-fg-muted">Icon</Label>
               <IconPicker value={icon} onChange={setIcon} />
             </div>
           </div>
 
           <div className="space-y-1">
-            <Label className="text-xs text-white/50">Tags</Label>
+            <Label className="text-xs text-fg-muted">Tags</Label>
             <TagsEditor tags={tags} onChange={setTags} />
           </div>
 
           {error && (
-            <div className="rounded-md border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
               {error}
             </div>
           )}
@@ -445,12 +445,12 @@ response = requests.post(
       {/* Tabs Section */}
       <div className="flex-1 flex flex-col min-h-0">
         {/* Tab Headers */}
-        <div className="flex items-center gap-1 border-b border-white/10 px-4">
+        <div className="flex items-center gap-1 border-b border-border px-4">
           <button
             type="button"
             onClick={() => setActiveTab("code")}
             className={`relative px-3 py-2 text-xs font-medium transition-colors ${
-              activeTab === "code" ? "text-white" : "text-white/40 hover:text-white/60"
+              activeTab === "code" ? "text-fg" : "text-fg-subtle hover:text-fg-muted"
             }`}
           >
             Code
@@ -462,7 +462,7 @@ response = requests.post(
             type="button"
             onClick={() => setActiveTab("response")}
             className={`relative flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors ${
-              activeTab === "response" ? "text-white" : "text-white/40 hover:text-white/60"
+              activeTab === "response" ? "text-fg" : "text-fg-subtle hover:text-fg-muted"
             }`}
           >
             Response
@@ -480,7 +480,7 @@ response = requests.post(
           {activeTab === "code" && (
             <div className="h-full flex flex-col">
               {/* Language Selector */}
-              <div className="flex items-center justify-between px-4 py-2 border-b border-white/5">
+              <div className="flex items-center justify-between px-4 py-2 border-b border-border">
                 <div className="flex gap-1">
                   {CODE_LANGUAGES.map((lang) => (
                     <button
@@ -489,8 +489,8 @@ response = requests.post(
                       onClick={() => setCodeLanguage(lang.id)}
                       className={`px-2 py-1 text-[10px] font-medium rounded transition-colors ${
                         codeLanguage === lang.id
-                          ? "bg-white/10 text-white"
-                          : "text-white/40 hover:text-white/60"
+                          ? "bg-bg-elevated text-fg"
+                          : "text-fg-subtle hover:text-fg-muted"
                       }`}
                     >
                       {lang.label}
@@ -500,7 +500,7 @@ response = requests.post(
                 <button
                   type="button"
                   onClick={handleCopyCode}
-                  className="flex items-center gap-1 px-2 py-1 text-[10px] text-white/40 hover:text-white transition-colors"
+                  className="flex items-center gap-1 px-2 py-1 text-[10px] text-fg-subtle hover:text-fg transition-colors"
                 >
                   {codeCopied ? (
                     <>
@@ -545,10 +545,10 @@ response = requests.post(
             <div className="h-full flex flex-col">
               {response ? (
                 <>
-                  <div className="flex items-center gap-2 px-4 py-2 border-b border-white/5">
+                  <div className="flex items-center gap-2 px-4 py-2 border-b border-border">
                     <span className="h-2 w-2 rounded-full bg-green-500" />
                     <span className="text-xs text-green-400">200 OK</span>
-                    <span className="text-[10px] text-white/30">• Event created</span>
+                    <span className="text-[10px] text-fg-subtle">• Event created</span>
                   </div>
                   <div className="flex-1 overflow-auto text-xs [&_code]:!bg-transparent [&_span]:!bg-transparent">
                     <SyntaxHighlighter
@@ -570,13 +570,13 @@ response = requests.post(
                 </>
               ) : (
                 <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
-                  <div className="mb-3 rounded-full bg-white/5 p-3">
-                    <svg className="h-5 w-5 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="mb-3 rounded-full bg-bg-elevated/40 p-3">
+                    <svg className="h-5 w-5 text-fg-subtle" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                   </div>
-                  <p className="text-xs text-white/40">No response yet</p>
-                  <p className="text-[10px] text-white/25 mt-1">Send an event to see the response</p>
+                  <p className="text-xs text-fg-subtle">No response yet</p>
+                  <p className="text-[10px] text-fg-subtle mt-1">Send an event to see the response</p>
                 </div>
               )}
             </div>
@@ -597,14 +597,14 @@ response = requests.post(
       {/* Backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/30"
+          className="fixed inset-0 z-40 bg-bg/70"
           onClick={onClose}
         />
       )}
 
       {/* Drawer */}
       <div
-        className={`fixed right-0 top-0 z-50 h-full w-[400px] transform border-l border-white/10 bg-[#0a0a0a] transition-transform duration-300 ease-in-out ${
+        className={`fixed right-0 top-0 z-50 h-full w-[400px] transform border-l border-border bg-bg-elevated transition-transform duration-300 ease-in-out ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >

@@ -1,23 +1,10 @@
 import { useState, useEffect, useCallback, useRef, useImperativeHandle, forwardRef, useMemo } from "react";
 import { useRouter } from "next/router";
-import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  AreaChart,
-  Area,
-  ScatterChart,
-  Scatter,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
-import { format, subHours, subDays, subMinutes } from "date-fns";
+import { subHours, subDays, subMinutes } from "date-fns";
 import { MoreVertical, Pencil, Trash2, BarChart3 as BarChartIcon, Palette, ExternalLink } from "lucide-react";
 import EventApi from "@/api/event.api";
 import { colorPalette } from "@/lib/colors";
+import { TimeseriesChart } from "@/components/charts/timeseries-chart";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,11 +17,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const CHART_TYPES = [
-  { value: "BAR", label: "Bar", icon: "▊" },
-  { value: "LINE", label: "Line", icon: "⟋" },
-  { value: "AREA", label: "Area", icon: "▓" },
-  { value: "STEP", label: "Step", icon: "⌐" },
-  { value: "SCATTER", label: "Scatter", icon: "⋯" },
+  { value: "AREA", label: "Area" },
+  { value: "LINE", label: "Line" },
+  { value: "BAR", label: "Bar" },
+  { value: "STEP", label: "Step" },
+  { value: "SCATTER", label: "Scatter" },
 ];
 
 const RANGE_OPTIONS = [
@@ -61,73 +48,24 @@ function getBucketKey(date, interval) {
   return d.toISOString();
 }
 
-function formatXAxis(timestamp, interval) {
-  const date = new Date(timestamp);
-  if (interval === "second") {
-    return format(date, "HH:mm:ss");
-  } else if (interval === "minute") {
-    return format(date, "HH:mm");
-  } else if (interval === "hour") {
-    return format(date, "HH:mm");
-  } else {
-    return format(date, "MMM d");
-  }
-}
-
-function CustomTooltip({ active, payload, label, interval }) {
-  if (!active || !payload || !payload.length) return null;
-
-  // For scatter charts, get timestamp from payload data
-  const timestamp = label || payload[0]?.payload?.timestamp;
-  if (!timestamp) return null;
-
-  const date = new Date(timestamp);
-  if (isNaN(date.getTime())) return null;
-
-  let formattedDate;
-  if (interval === "second") {
-    formattedDate = format(date, "HH:mm:ss");
-  } else if (interval === "minute") {
-    formattedDate = format(date, "MMM d, HH:mm");
-  } else if (interval === "hour") {
-    formattedDate = format(date, "MMM d, HH:00");
-  } else {
-    formattedDate = format(date, "MMM d, yyyy");
-  }
-
-  const count = payload[0]?.payload?.count ?? payload[0]?.value ?? 0;
-
-  return (
-    <div className="rounded-lg border border-white/10 bg-black/90 px-3 py-2 shadow-lg">
-      <p className="text-xs text-white/50">{formattedDate}</p>
-      <p className="text-sm font-medium text-white">
-        {count} event{count !== 1 ? "s" : ""}
-      </p>
-    </div>
-  );
-}
-
 // Parse search query to extract channel, user, tags, and text search
 function parseSearchQuery(query) {
   const tagFilters = [];
   const channelFilters = [];
   const userFilters = [];
 
-  // Extract channel filters (#channel)
   const channelRegex = /#([\w-]+)/g;
   let channelMatch;
   while ((channelMatch = channelRegex.exec(query)) !== null) {
     channelFilters.push(channelMatch[1]);
   }
 
-  // Extract user filters (@user)
   const userRegex = /@([\w-]+)/g;
   let userMatch;
   while ((userMatch = userRegex.exec(query)) !== null) {
     userFilters.push(userMatch[1]);
   }
 
-  // Remove channel and user filters from query for further processing
   let processedQuery = query.replace(channelRegex, "").replace(userRegex, "").trim();
 
   let textSearch = "";
@@ -164,13 +102,12 @@ export const DashboardChart = forwardRef(function DashboardChart(
   const [loading, setLoading] = useState(true);
   const [selectedRange, setSelectedRange] = useState("24h");
   const [totalEvents, setTotalEvents] = useState(0);
-  const [chartType, setChartType] = useState(chart.chartType || "BAR");
-  const [chartColor, setChartColor] = useState(chart.color || "#6366f1");
+  const [chartType, setChartType] = useState(chart.chartType || "AREA");
+  const [chartColor, setChartColor] = useState(chart.color || "#d97757");
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(chart.name);
   const intervalRef = useRef("hour");
 
-  // Parse chart's search query (memoized to avoid infinite re-renders)
   const { textSearch, tagsJson, effectiveChannels, usersFromSearch, tagFilters } = useMemo(() => {
     if (!chart.search && !chart.channel) {
       return { textSearch: "", tagsJson: "", effectiveChannels: [], usersFromSearch: [], tagFilters: [] };
@@ -180,7 +117,6 @@ export const DashboardChart = forwardRef(function DashboardChart(
     for (const { key, value } of tagFilters) {
       tagsObj[key] = value;
     }
-    // Use channels from search query, or fallback to chart.channel for backwards compatibility
     const effectiveChannels = channelFilters.length > 0 ? channelFilters : (chart.channel ? [chart.channel] : []);
     return {
       textSearch,
@@ -191,10 +127,8 @@ export const DashboardChart = forwardRef(function DashboardChart(
     };
   }, [chart.search, chart.channel]);
 
-  // Expose addEvent method to parent for real-time updates via socket
   useImperativeHandle(ref, () => ({
     addEvent: (event) => {
-      // Check if event matches this chart's filters
       const matchesChannel = effectiveChannels.length === 0 || effectiveChannels.includes(event.channel?.slug);
       const matchesUser = usersFromSearch.length === 0 || usersFromSearch.includes(event.userId);
 
@@ -217,7 +151,6 @@ export const DashboardChart = forwardRef(function DashboardChart(
         matchesText = eventName.includes(searchLower) || eventDesc.includes(searchLower);
       }
 
-      // Only update if event matches all filters
       if (!matchesChannel || !matchesUser || !matchesTags || !matchesText) {
         return;
       }
@@ -237,7 +170,6 @@ export const DashboardChart = forwardRef(function DashboardChart(
           return newData;
         }
 
-        // Bucket doesn't exist - check if event is newer than current range
         if (prevData.length > 0) {
           const lastBucket = prevData[prevData.length - 1];
           if (new Date(bucketKey) > new Date(lastBucket.timestamp)) {
@@ -296,16 +228,12 @@ export const DashboardChart = forwardRef(function DashboardChart(
     }
   }, [projectId, effectiveChannels, usersFromSearch, textSearch, tagsJson, selectedRange]);
 
-  // Initial fetch with loading
   useEffect(() => {
     fetchTimeline(true);
   }, [fetchTimeline]);
 
-  // Auto-refresh: skip for 1m range (use slide window for real-time updates), 60 seconds otherwise
   useEffect(() => {
-    // For 1m range, don't poll - rely on slide window for real-time updates
     if (selectedRange === "1m") return;
-
     const timer = setInterval(fetchTimeline, 60000);
     return () => clearInterval(timer);
   }, [fetchTimeline, selectedRange]);
@@ -317,9 +245,7 @@ export const DashboardChart = forwardRef(function DashboardChart(
     setIsEditing(false);
   };
 
-  // Slide window forward (only for short intervals, not daily)
   useEffect(() => {
-    // Skip slide window for daily intervals (7d, 30d) - no need to update every second
     if (loading || interval === "day") return;
 
     const timer = setInterval(() => {
@@ -329,11 +255,9 @@ export const DashboardChart = forwardRef(function DashboardChart(
         const currentBucketKey = getBucketKey(new Date(), intervalRef.current);
         const lastBucket = prevData[prevData.length - 1];
 
-        // Check if current bucket already exists in data (prevent duplicates)
         const bucketExists = prevData.some((d) => d.timestamp === currentBucketKey);
         if (bucketExists) return prevData;
 
-        // Only add new bucket if it's actually a new time period
         if (new Date(currentBucketKey) > new Date(lastBucket.timestamp)) {
           const newBucket = { timestamp: currentBucketKey, count: 0 };
           return [...prevData.slice(1), newBucket];
@@ -346,10 +270,16 @@ export const DashboardChart = forwardRef(function DashboardChart(
     return () => clearInterval(timer);
   }, [loading, interval]);
 
+  const hasFilters = textSearch || tagFilters.length > 0 || effectiveChannels.length > 0 || usersFromSearch.length > 0;
+
   return (
-    <div className="rounded-lg border border-white/6 bg-white/2 p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+    <div className="rounded-lg border border-border bg-bg-elevated/30">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4 px-4 py-2.5 border-b border-border">
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="text-[0.65rem] font-mono uppercase tracking-[0.18em] text-fg-subtle shrink-0">
+            chart
+          </span>
           {isEditing ? (
             <input
               type="text"
@@ -364,48 +294,26 @@ export const DashboardChart = forwardRef(function DashboardChart(
                 }
               }}
               autoFocus
-              className="rounded border border-white/20 bg-white/5 px-2 py-0.5 text-sm font-medium text-white/70 outline-none focus:border-white/40"
+              className="rounded border border-border-strong bg-bg-elevated px-2 py-0.5 text-sm text-fg outline-none focus:border-accent/50"
             />
           ) : (
-            <span className="text-sm font-medium text-white/70">{chart.name}</span>
+            <span className="font-serif text-base text-fg truncate">{chart.name}</span>
           )}
-          <span className="text-xs text-white/40">
-            {totalEvents} event{totalEvents !== 1 ? "s" : ""}
-          </span>
         </div>
-        <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-1.5 rounded-md border border-white/10 px-2.5 py-1 text-xs font-medium text-white/60 transition-colors hover:text-white hover:bg-white/5">
-                {RANGE_OPTIONS.find((r) => r.value === selectedRange)?.label}
-                <svg className="h-3 w-3 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {RANGE_OPTIONS.map((option) => (
-                <DropdownMenuItem
-                  key={option.value}
-                  onClick={() => setSelectedRange(option.value)}
-                  className={selectedRange === option.value ? "bg-white/10 text-white" : ""}
-                >
-                  {option.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          {/* Options menu */}
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="shrink-0 text-[0.65rem] font-mono" style={{ color: chartColor }}>
+            ●
+          </span>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="rounded p-1 text-white/30 hover:bg-white/5 hover:text-white/60 focus:outline-none"
+                className="rounded p-1 text-fg-subtle hover:bg-bg-elevated hover:text-fg transition-colors focus:outline-none"
                 title="Options"
               >
                 <MoreVertical className="h-4 w-4" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-[150px]">
+            <DropdownMenuContent align="end" className="min-w-[160px]">
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger className="text-xs">
                   <BarChartIcon className="h-4 w-4" />
@@ -417,14 +325,11 @@ export const DashboardChart = forwardRef(function DashboardChart(
                       key={type.value}
                       onClick={() => {
                         setChartType(type.value);
-                        if (onUpdate) {
-                          onUpdate(chart.id, { chartType: type.value });
-                        }
+                        if (onUpdate) onUpdate(chart.id, { chartType: type.value });
                       }}
-                      className={`text-xs ${chartType === type.value ? "bg-white/10" : ""}`}
+                      className={`text-xs ${chartType === type.value ? "bg-bg-elevated text-fg" : ""}`}
                     >
-                      <span className="w-4 text-center">{type.icon}</span>
-                      <span>{type.label}</span>
+                      {type.label}
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuSubContent>
@@ -435,29 +340,24 @@ export const DashboardChart = forwardRef(function DashboardChart(
                   <span>Color</span>
                 </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent className="p-2">
-                  <div className="grid grid-cols-5 gap-1.5">
+                  <div className="grid grid-cols-6 gap-1.5">
                     {colorPalette.map((color) => (
                       <button
                         key={color}
                         onClick={() => {
                           setChartColor(color);
-                          if (onUpdate) {
-                            onUpdate(chart.id, { color });
-                          }
+                          if (onUpdate) onUpdate(chart.id, { color });
                         }}
-                        className={`h-6 w-6 rounded-full transition-all hover:scale-110 ${
-                          chartColor === color ? "ring-2 ring-white ring-offset-2 ring-offset-[#1a1a1a]" : ""
+                        className={`h-5 w-5 rounded-full transition-transform hover:scale-110 ${
+                          chartColor === color ? "ring-2 ring-offset-2 ring-offset-bg-elevated scale-110" : ""
                         }`}
-                        style={{ backgroundColor: color }}
+                        style={{ backgroundColor: color, "--tw-ring-color": color }}
                       />
                     ))}
                   </div>
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
-              <DropdownMenuItem
-                onClick={() => setIsEditing(true)}
-                className="text-xs"
-              >
+              <DropdownMenuItem onClick={() => setIsEditing(true)} className="text-xs">
                 <Pencil className="h-4 w-4" />
                 <span>Edit name</span>
               </DropdownMenuItem>
@@ -466,7 +366,7 @@ export const DashboardChart = forwardRef(function DashboardChart(
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() => onDelete(chart.id)}
-                    className="text-xs text-red-400 focus:text-red-300"
+                    className="text-xs text-destructive focus:text-destructive"
                   >
                     <Trash2 className="h-4 w-4" />
                     <span>Delete</span>
@@ -478,56 +378,69 @@ export const DashboardChart = forwardRef(function DashboardChart(
         </div>
       </div>
 
-      {/* Filter info */}
-      <div className="mb-3 flex items-center justify-between gap-3 text-xs">
+      {/* Stats */}
+      <div className="px-5 pt-4 pb-1">
+        <div className="flex items-baseline gap-3 flex-wrap">
+          <span className="font-serif text-3xl tracking-tight tabular-nums">
+            {totalEvents}
+          </span>
+          <span className="text-sm text-fg-muted">
+            event{totalEvents !== 1 ? "s" : ""}
+          </span>
+        </div>
+        <p className="mt-1 text-xs text-fg-subtle">
+          {RANGE_OPTIONS.find((r) => r.value === selectedRange)?.label} range
+        </p>
+      </div>
+
+      {/* Filter pills */}
+      <div className="flex items-center justify-between gap-3 px-5 pt-2 pb-2 text-xs">
         <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-          {/* Show text search if present */}
           {textSearch && (
             <button
               onClick={() => router.push(`/projects/${projectId}?search=${encodeURIComponent(textSearch)}`)}
-              className="rounded-full bg-white/5 px-2.5 py-1 text-white/50 transition-colors hover:bg-white/10 hover:text-white/70"
+              className="rounded-full bg-bg-elevated px-2.5 py-1 font-mono text-fg-muted border border-border hover:border-border-strong hover:text-fg transition-colors"
             >
               {textSearch}
             </button>
           )}
-          {/* Show tag filters as separate badges */}
           {tagFilters.map(({ key, value }, i) => (
             <button
               key={i}
               onClick={() => router.push(`/projects/${projectId}?search=${encodeURIComponent(`${key}:${value}`)}`)}
-              className="rounded-full bg-blue-500/10 px-2.5 py-1 text-blue-400 transition-colors hover:bg-blue-500/20"
+              className="rounded-full px-2.5 py-1 font-mono border border-border hover:border-border-strong transition-colors"
+              style={{ color: "var(--color-syntax-key)" }}
             >
               {key}:{value}
             </button>
           ))}
-          {/* Show channel badges */}
           {effectiveChannels.map((channel, i) => (
             <button
               key={i}
               onClick={() => router.push(`/projects/${projectId}?search=${encodeURIComponent(`#${channel}`)}`)}
-              className="rounded-full bg-purple-500/10 px-2.5 py-1 text-purple-400 transition-colors hover:bg-purple-500/20"
+              className="rounded-full px-2.5 py-1 font-mono border border-border hover:border-border-strong transition-colors"
+              style={{ color: "var(--color-syntax-keyword)" }}
             >
               #{channel}
             </button>
           ))}
-          {/* Show user badges */}
           {usersFromSearch.map((user, i) => (
             <button
               key={i}
               onClick={() => router.push(`/projects/${projectId}?search=${encodeURIComponent(`@${user}`)}`)}
-              className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-emerald-400 transition-colors hover:bg-emerald-500/20"
+              className="rounded-full px-2.5 py-1 font-mono border border-border hover:border-border-strong transition-colors"
+              style={{ color: "var(--color-syntax-string)" }}
             >
               @{user}
             </button>
           ))}
-          {!textSearch && tagFilters.length === 0 && effectiveChannels.length === 0 && usersFromSearch.length === 0 && (
-            <span className="text-white/30">All events</span>
+          {!hasFilters && (
+            <span className="text-fg-subtle font-mono">all events</span>
           )}
         </div>
-        {/* View all filtered events button */}
         <button
           onClick={() => router.push(`/projects/${projectId}?search=${encodeURIComponent(chart.search || "")}`)}
-          className="shrink-0 flex items-center gap-1.5 text-white/30 transition-colors hover:text-white/60"
+          className="shrink-0 flex items-center gap-1.5 text-fg-subtle hover:text-fg transition-colors"
           title="View all filtered events"
         >
           <span>View</span>
@@ -535,149 +448,34 @@ export const DashboardChart = forwardRef(function DashboardChart(
         </button>
       </div>
 
-      <div className="h-[180px] [&_.recharts-wrapper]:!outline-none [&_svg]:!outline-none">
-        {loading ? (
-          <div className="flex h-full items-center justify-center">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/10 border-t-white/40" />
-          </div>
-        ) : data.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
-            {chartType === "LINE" ? (
-              <LineChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                <XAxis
-                  dataKey="timestamp"
-                  tickFormatter={(t) => formatXAxis(t, interval)}
-                  tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                  minTickGap={50}
-                />
-                <YAxis
-                  tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                  allowDecimals={false}
-                />
-                <Tooltip content={<CustomTooltip interval={interval} />} />
-                <Line
-                  type="monotone"
-                  dataKey="count"
-                  stroke={chartColor}
-                  strokeWidth={2}
-                  dot={false}
-                  isAnimationActive={false}
-                />
-              </LineChart>
-            ) : chartType === "AREA" ? (
-              <AreaChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                <XAxis
-                  dataKey="timestamp"
-                  tickFormatter={(t) => formatXAxis(t, interval)}
-                  tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                  minTickGap={50}
-                />
-                <YAxis
-                  tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                  allowDecimals={false}
-                />
-                <Tooltip content={<CustomTooltip interval={interval} />} />
-                <Area
-                  type="monotone"
-                  dataKey="count"
-                  stroke={chartColor}
-                  fill={chartColor}
-                  fillOpacity={0.3}
-                  strokeWidth={2}
-                  isAnimationActive={false}
-                />
-              </AreaChart>
-            ) : chartType === "STEP" ? (
-              <LineChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                <XAxis
-                  dataKey="timestamp"
-                  tickFormatter={(t) => formatXAxis(t, interval)}
-                  tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                  minTickGap={50}
-                />
-                <YAxis
-                  tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                  allowDecimals={false}
-                />
-                <Tooltip content={<CustomTooltip interval={interval} />} />
-                <Line
-                  type="stepAfter"
-                  dataKey="count"
-                  stroke={chartColor}
-                  strokeWidth={2}
-                  dot={false}
-                  isAnimationActive={false}
-                />
-              </LineChart>
-            ) : chartType === "SCATTER" ? (
-              <ScatterChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                <XAxis
-                  dataKey="timestamp"
-                  tickFormatter={(t) => formatXAxis(t, interval)}
-                  tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                  minTickGap={50}
-                  type="category"
-                  allowDuplicatedCategory={false}
-                />
-                <YAxis
-                  dataKey="count"
-                  tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                  allowDecimals={false}
-                />
-                <Tooltip content={<CustomTooltip interval={interval} />} />
-                <Scatter
-                  dataKey="count"
-                  fill={chartColor}
-                  isAnimationActive={false}
-                />
-              </ScatterChart>
-            ) : (
-              <BarChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                <XAxis
-                  dataKey="timestamp"
-                  tickFormatter={(t) => formatXAxis(t, interval)}
-                  tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                  minTickGap={50}
-                />
-                <YAxis
-                  tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                  allowDecimals={false}
-                />
-                <Tooltip content={<CustomTooltip interval={interval} />} cursor={{ fill: "rgba(255,255,255,0.05)" }} />
-                <Bar
-                  dataKey="count"
-                  fill={chartColor}
-                  radius={[2, 2, 0, 0]}
-                  isAnimationActive={false}
-                />
-              </BarChart>
-            )}
-          </ResponsiveContainer>
-        ) : (
-          <div className="flex h-full items-center justify-center text-xs text-white/30">
-            No activity in this time range
-          </div>
-        )}
+      {/* Chart */}
+      <div className="px-2 pb-2">
+        <TimeseriesChart
+          data={data}
+          interval={interval}
+          chartType={chartType}
+          color={chartColor}
+          loading={loading}
+          height={180}
+          emptyText="No activity in this time range"
+        />
+      </div>
+
+      {/* Range pills */}
+      <div className="flex items-center justify-end gap-0.5 px-3 py-2 border-t border-border">
+        {RANGE_OPTIONS.map((option) => (
+          <button
+            key={option.value}
+            onClick={() => setSelectedRange(option.value)}
+            className={`px-2.5 py-1 text-xs font-mono rounded transition-colors ${
+              selectedRange === option.value
+                ? "bg-bg-elevated text-fg border border-border-strong"
+                : "text-fg-subtle hover:text-fg-muted border border-transparent"
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
       </div>
     </div>
   );

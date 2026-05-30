@@ -17,7 +17,7 @@ function SearchBar({ value, onChange }) {
   return (
     <div className="relative">
       <svg
-        className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30"
+        className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -34,7 +34,7 @@ function SearchBar({ value, onChange }) {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Search by user ID..."
-        className="h-9 w-full rounded-lg border border-white/10 bg-white/2 pl-10 pr-4 text-sm text-white placeholder:text-white/30 focus:border-white/20 focus:outline-none"
+        className="h-9 w-full rounded-lg border border-border bg-bg-elevated/30 pl-10 pr-4 text-sm text-fg placeholder:text-fg-subtle focus:border-border-strong focus:outline-none"
       />
     </div>
   );
@@ -46,7 +46,7 @@ function SortDropdown({ value, order, onChange, onOrderChange }) {
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-9 rounded-lg border border-white/10 bg-white/2 px-3 text-sm text-white focus:border-white/20 focus:outline-none"
+        className="h-9 rounded-lg border border-border bg-bg-elevated/30 px-3 text-sm text-fg focus:border-border-strong focus:outline-none"
       >
         {SORT_OPTIONS.map((opt) => (
           <option key={opt.value} value={opt.value}>
@@ -56,7 +56,7 @@ function SortDropdown({ value, order, onChange, onOrderChange }) {
       </select>
       <button
         onClick={() => onOrderChange(order === "desc" ? "asc" : "desc")}
-        className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/2 text-white/60 transition-colors hover:bg-white/4"
+        className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-bg-elevated/30 text-fg-muted transition-colors hover:bg-bg-elevated/40"
         title={order === "desc" ? "Descending" : "Ascending"}
       >
         <svg
@@ -91,12 +91,12 @@ function PropertyFilter({ filters, onAdd, onRemove }) {
       {Object.entries(filters).map(([key, value]) => (
         <span
           key={key}
-          className="inline-flex items-center gap-1 rounded-full bg-blue-500/20 px-2.5 py-1 text-xs text-blue-300"
+          className="inline-flex items-center gap-1 rounded-full bg-bg-elevated border border-syntax-key/30 text-syntax-key px-2.5 py-1 text-xs text-syntax-key"
         >
           {key}:{value || "*"}
           <button
             onClick={() => onRemove(key)}
-            className="ml-1 text-blue-300/60 hover:text-blue-300"
+            className="ml-1 text-syntax-key/60 hover:text-syntax-key"
           >
             <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -111,27 +111,27 @@ function PropertyFilter({ filters, onAdd, onRemove }) {
             value={newKey}
             onChange={(e) => setNewKey(e.target.value)}
             placeholder="key"
-            className="h-7 w-20 rounded border border-white/10 bg-white/4 px-2 text-xs text-white placeholder:text-white/30 focus:outline-none"
+            className="h-7 w-20 rounded border border-border bg-bg-elevated/40 px-2 text-xs text-fg placeholder:text-fg-subtle focus:outline-none"
             autoFocus
           />
-          <span className="text-white/30">:</span>
+          <span className="text-fg-subtle">:</span>
           <input
             type="text"
             value={newValue}
             onChange={(e) => setNewValue(e.target.value)}
             placeholder="value"
-            className="h-7 w-24 rounded border border-white/10 bg-white/4 px-2 text-xs text-white placeholder:text-white/30 focus:outline-none"
+            className="h-7 w-24 rounded border border-border bg-bg-elevated/40 px-2 text-xs text-fg placeholder:text-fg-subtle focus:outline-none"
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
           />
           <button
             onClick={handleAdd}
-            className="h-7 rounded bg-white/10 px-2 text-xs text-white/60 hover:bg-white/20"
+            className="h-7 rounded bg-bg-elevated px-2 text-xs text-fg-muted hover:bg-bg-elevated"
           >
             Add
           </button>
           <button
             onClick={() => setIsAdding(false)}
-            className="text-white/30 hover:text-white/50"
+            className="text-fg-subtle hover:text-fg-muted"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -141,7 +141,7 @@ function PropertyFilter({ filters, onAdd, onRemove }) {
       ) : (
         <button
           onClick={() => setIsAdding(true)}
-          className="inline-flex items-center gap-1 rounded-full border border-dashed border-white/20 px-2.5 py-1 text-xs text-white/40 transition-colors hover:border-white/40 hover:text-white/60"
+          className="inline-flex items-center gap-1 rounded-full border border-dashed border-border-strong px-2.5 py-1 text-xs text-fg-subtle transition-colors hover:border-border0 hover:text-fg-muted"
         >
           <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -155,17 +155,17 @@ function PropertyFilter({ filters, onAdd, onRemove }) {
 
 function ProfilesListSkeleton() {
   return (
-    <div className="overflow-hidden rounded-lg border border-white/6 bg-white/2">
+    <div className="overflow-hidden rounded-lg border border-border bg-bg-elevated/30">
       {[...Array(5)].map((_, i) => (
-        <div key={i} className="flex items-start gap-3 border-b border-white/4 px-4 py-4 last:border-b-0">
-          <div className="h-10 w-10 animate-pulse rounded-full bg-white/10" />
+        <div key={i} className="flex items-start gap-3 border-b border-border px-4 py-4 last:border-b-0">
+          <div className="h-10 w-10 animate-pulse rounded-full bg-bg-elevated" />
           <div className="flex-1 space-y-2">
-            <div className="h-4 w-32 animate-pulse rounded bg-white/10" />
+            <div className="h-4 w-32 animate-pulse rounded bg-bg-elevated" />
             <div className="flex gap-1">
-              <div className="h-5 w-16 animate-pulse rounded bg-white/5" />
-              <div className="h-5 w-20 animate-pulse rounded bg-white/5" />
+              <div className="h-5 w-16 animate-pulse rounded bg-bg-elevated/40" />
+              <div className="h-5 w-20 animate-pulse rounded bg-bg-elevated/40" />
             </div>
-            <div className="h-3 w-48 animate-pulse rounded bg-white/5" />
+            <div className="h-3 w-48 animate-pulse rounded bg-bg-elevated/40" />
           </div>
         </div>
       ))}
@@ -176,13 +176,13 @@ function ProfilesListSkeleton() {
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center py-20">
-      <div className="mb-4 rounded-full bg-white/4 p-4">
-        <svg className="h-8 w-8 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="mb-4 rounded-full bg-bg-elevated/40 p-4">
+        <svg className="h-8 w-8 text-fg-subtle" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
         </svg>
       </div>
-      <h3 className="mb-1 font-medium text-white/60">No profiles yet</h3>
-      <p className="text-sm text-white/30 text-center max-w-sm">
+      <h3 className="mb-1 font-medium text-fg-muted">No profiles yet</h3>
+      <p className="text-sm text-fg-subtle text-center max-w-sm">
         Profiles are created when you send events with a user_id or call the identify API
       </p>
     </div>
@@ -322,7 +322,7 @@ export function ProfilesPanel({ projectId, profileId }) {
     if (loadingProfile) {
       return (
         <div className="flex items-center justify-center py-32">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/10 border-t-white/60" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-accent" />
         </div>
       );
     }
@@ -364,7 +364,7 @@ export function ProfilesPanel({ projectId, profileId }) {
 
       {/* Results count */}
       {!loading && pagination.total > 0 && (
-        <p className="mb-3 text-xs text-white/30">
+        <p className="mb-3 text-xs text-fg-subtle">
           {pagination.total} profile{pagination.total !== 1 ? "s" : ""} found
         </p>
       )}
@@ -376,7 +376,7 @@ export function ProfilesPanel({ projectId, profileId }) {
         <EmptyState />
       ) : (
         <>
-          <div className="overflow-hidden rounded-lg border border-white/6 bg-white/2">
+          <div className="overflow-hidden rounded-lg border border-border bg-bg-elevated/30">
             {profiles.map((profile) => (
               <ProfileRow
                 key={profile.id}
@@ -390,8 +390,8 @@ export function ProfilesPanel({ projectId, profileId }) {
           {/* Loader */}
           <div ref={loaderRef} className="flex items-center justify-center py-4">
             {loadingMore && (
-              <div className="flex items-center gap-2 text-sm text-white/40">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/10 border-t-white/40" />
+              <div className="flex items-center gap-2 text-sm text-fg-subtle">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-border border-t-accent" />
                 Loading more...
               </div>
             )}
@@ -399,7 +399,7 @@ export function ProfilesPanel({ projectId, profileId }) {
 
           {/* End of list */}
           {!hasMore && profiles.length > 0 && (
-            <p className="py-3 text-center text-xs text-white/30">
+            <p className="py-3 text-center text-xs text-fg-subtle">
               {pagination.total} profiles total
             </p>
           )}

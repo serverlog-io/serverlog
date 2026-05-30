@@ -75,10 +75,10 @@ export function CreateProjectDialog({ onCreated }) {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
-              <p className="text-xs text-white/30">Optional</p>
+              <p className="text-xs text-fg-subtle">Optional</p>
             </div>
             {error && (
-              <div className="rounded-md border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+              <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                 {error}
               </div>
             )}

@@ -4,20 +4,20 @@ import { cva } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
         default:
-          "bg-white text-black hover:bg-white/90",
+          "bg-accent text-fg hover:bg-accent-hover shadow-[0_0_24px_-8px_rgba(217,119,87,0.55)]",
         destructive:
-          "bg-red-600 text-white hover:bg-red-700",
+          "bg-destructive/90 text-fg hover:bg-destructive",
         outline:
-          "border border-white/10 bg-transparent text-white/70 hover:bg-white/5 hover:text-white hover:border-white/20",
+          "border border-border-strong bg-transparent text-fg-muted hover:bg-bg-elevated hover:text-fg hover:border-fg-subtle",
         secondary:
-          "bg-white/10 text-white hover:bg-white/15",
-        ghost: "text-white/60 hover:bg-white/5 hover:text-white",
-        link: "text-white/60 underline-offset-4 hover:underline hover:text-white",
+          "bg-bg-elevated text-fg border border-border hover:border-border-strong",
+        ghost: "text-fg-muted hover:bg-bg-elevated hover:text-fg",
+        link: "text-fg-muted underline-offset-4 hover:underline hover:text-fg",
       },
       size: {
         default: "h-9 px-4 py-2",

@@ -50,9 +50,9 @@ export function OnlineUsersIndicator({ projectId }) {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2.5 rounded-lg border border-white/10 bg-white/5 px-4 py-2">
-        <div className="h-2.5 w-2.5 animate-pulse rounded-full bg-white/20" />
-        <span className="text-sm text-white/30">...</span>
+      <div className="flex items-center gap-2.5 rounded-lg border border-border bg-bg-elevated/40 px-4 py-2">
+        <div className="h-2.5 w-2.5 animate-pulse rounded-full bg-fg-subtle/40" />
+        <span className="text-sm text-fg-subtle">...</span>
       </div>
     );
   }
@@ -61,15 +61,15 @@ export function OnlineUsersIndicator({ projectId }) {
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className="flex cursor-default items-center gap-2.5 rounded-lg border border-white/10 bg-white/5 px-4 py-2">
+          <div className="flex cursor-default items-center gap-2.5 rounded-lg border border-border bg-bg-elevated/40 px-4 py-2">
             <div className="relative flex h-2.5 w-2.5">
               {count > 0 && (
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-syntax-string opacity-75" />
               )}
-              <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${count > 0 ? 'bg-emerald-500' : 'bg-white/20'}`} />
+              <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${count > 0 ? 'bg-syntax-string' : 'bg-fg-subtle/40'}`} />
             </div>
-            <span className="text-sm text-white/60">
-              <span className="font-semibold text-white">{count}</span> online
+            <span className="text-sm text-fg-muted">
+              <span className="font-semibold text-fg">{count}</span> online
             </span>
           </div>
         </TooltipTrigger>

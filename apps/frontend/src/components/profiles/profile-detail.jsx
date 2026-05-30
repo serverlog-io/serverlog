@@ -12,7 +12,7 @@ function ActivityChart({ data, loading }) {
         {[...Array(30)].map((_, i) => (
           <div key={i} className="flex-1 h-full flex items-end">
             <div
-              className="w-full rounded-sm bg-white/5 animate-pulse"
+              className="w-full rounded-sm bg-bg-elevated/40 animate-pulse"
               style={{ height: `${20 + Math.random() * 60}%` }}
             />
           </div>
@@ -23,7 +23,7 @@ function ActivityChart({ data, loading }) {
 
   if (!data || data.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center text-sm text-white/30">
+      <div className="flex h-full items-center justify-center text-sm text-fg-subtle">
         No activity data
       </div>
     );
@@ -34,7 +34,7 @@ function ActivityChart({ data, loading }) {
 
   if (!hasActivity) {
     return (
-      <div className="flex h-full items-center justify-center text-sm text-white/30">
+      <div className="flex h-full items-center justify-center text-sm text-fg-subtle">
         No activity in this period
       </div>
     );
@@ -54,15 +54,15 @@ function ActivityChart({ data, loading }) {
               className={`w-full rounded-sm transition-all duration-200 ${
                 hasEvents
                   ? "bg-gradient-to-t from-emerald-500/80 to-emerald-400/60 group-hover:from-emerald-400 group-hover:to-emerald-300"
-                  : "bg-white/[0.06]"
+                  : "bg-bg-elevated/60"
               }`}
               style={{ height: `${heightPercent}%` }}
             />
-            <div className="pointer-events-none absolute bottom-full left-1/2 mb-2 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-zinc-900 border border-white/10 px-2.5 py-1.5 text-xs text-white shadow-xl group-hover:block z-10">
-              <span className="text-white/50">{day.date}</span>
-              <span className="mx-1.5 text-white/20">·</span>
-              <span className="font-medium text-emerald-400">{day.count}</span>
-              <span className="text-white/50"> events</span>
+            <div className="pointer-events-none absolute bottom-full left-1/2 mb-2 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-zinc-900 border border-border px-2.5 py-1.5 text-xs text-fg shadow-xl group-hover:block z-10">
+              <span className="text-fg-muted">{day.date}</span>
+              <span className="mx-1.5 text-fg-subtle">·</span>
+              <span className="font-medium text-syntax-string">{day.count}</span>
+              <span className="text-fg-muted"> events</span>
             </div>
           </div>
         );
@@ -76,16 +76,16 @@ function EventRow({ event }) {
   const colors = getColorsFromHex(channelColor);
 
   return (
-    <div className="flex items-start sm:items-center gap-3 bg-white/[0.02] px-3 sm:px-4 py-3 transition-colors hover:bg-white/[0.04] border-b border-white/[0.04] last:border-b-0">
-      <div className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-md bg-white/5 text-xs sm:text-sm">
+    <div className="flex items-start sm:items-center gap-3 bg-bg-elevated/30 px-3 sm:px-4 py-3 transition-colors hover:bg-bg-elevated/50 border-b border-border last:border-b-0">
+      <div className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-md bg-bg-elevated/40 text-xs sm:text-sm">
         {event.icon || "●"}
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-3">
           <div className="min-w-0 flex-1">
-            <div className="text-sm text-white/90 truncate">{event.event}</div>
+            <div className="text-sm text-fg truncate">{event.event}</div>
             {event.description && (
-              <p className="truncate text-xs text-white/40">{event.description}</p>
+              <p className="truncate text-xs text-fg-subtle">{event.description}</p>
             )}
           </div>
           <div className="flex items-center gap-2 sm:shrink-0">
@@ -97,7 +97,7 @@ function EventRow({ event }) {
                 {event.channel.name}
               </span>
             )}
-            <span className="shrink-0 font-mono text-[10px] sm:text-[11px] text-white/30">
+            <span className="shrink-0 font-mono text-[10px] sm:text-[11px] text-fg-subtle">
               {getRelativeTime(event.timestamp)}
             </span>
           </div>
@@ -110,8 +110,8 @@ function EventRow({ event }) {
 function StatItem({ label, value, highlight }) {
   return (
     <div className="flex flex-col">
-      <span className="text-[11px] uppercase tracking-wider text-white/40">{label}</span>
-      <span className={`text-sm font-medium tabular-nums ${highlight ? "text-emerald-400" : "text-white"}`}>
+      <span className="text-[11px] uppercase tracking-wider text-fg-subtle">{label}</span>
+      <span className={`text-sm font-medium tabular-nums ${highlight ? "text-syntax-string" : "text-fg"}`}>
         {value}
       </span>
     </div>
@@ -172,14 +172,14 @@ export function ProfileDetail({ profile, projectId, onBack }) {
       <div className="mb-6 flex items-center justify-between gap-2">
         <button
           onClick={onBack}
-          className="-ml-2 flex items-center gap-1.5 rounded-md px-2 py-1 text-sm text-white/40 transition-colors hover:text-white"
+          className="-ml-2 flex items-center gap-1.5 rounded-md px-2 py-1 text-sm text-fg-subtle transition-colors hover:text-fg"
         >
           <ArrowLeft className="h-4 w-4" />
           <span className="hidden sm:inline">Profiles</span>
         </button>
         <button
           onClick={handleViewAllEvents}
-          className="flex items-center gap-2 rounded-md border border-white/10 px-2.5 py-1.5 text-xs sm:text-sm sm:px-3 text-white/70 transition-colors hover:border-white/20 hover:text-white"
+          className="flex items-center gap-2 rounded-md border border-border px-2.5 py-1.5 text-xs sm:text-sm sm:px-3 text-fg-muted transition-colors hover:border-border-strong hover:text-fg"
         >
           <span className="hidden sm:inline">View all events</span>
           <span className="sm:hidden">All events</span>
@@ -188,17 +188,17 @@ export function ProfileDetail({ profile, projectId, onBack }) {
       </div>
 
       {/* Profile header + Stats */}
-      <div className="mb-8 rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 sm:p-5">
+      <div className="mb-8 rounded-xl border border-border-strong bg-bg-elevated/30 p-4 sm:p-5">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <img
               src={`https://api.dicebear.com/9.x/fun-emoji/svg?seed=${encodeURIComponent(profile.externalId)}`}
               alt=""
-              className="h-11 w-11 sm:h-12 sm:w-12 rounded-full bg-white/5 ring-2 ring-white/10"
+              className="h-11 w-11 sm:h-12 sm:w-12 rounded-full bg-bg-elevated/40 ring-2 ring-accent/20"
             />
             <div>
-              <h1 className="text-base font-semibold text-white truncate max-w-[200px] sm:max-w-none">{profile.externalId}</h1>
-              <p className="text-xs text-white/40">
+              <h1 className="text-base font-semibold text-fg truncate max-w-[200px] sm:max-w-none">{profile.externalId}</h1>
+              <p className="text-xs text-fg-subtle">
                 {profile.eventsCount?.toLocaleString() || 0} total events
               </p>
             </div>
@@ -229,17 +229,17 @@ export function ProfileDetail({ profile, projectId, onBack }) {
       {/* Properties section */}
       {propertyEntries.length > 0 && (
         <div className="mb-8">
-          <h2 className="mb-4 text-xs font-medium uppercase tracking-wider text-white/30">
+          <h2 className="mb-4 text-xs font-medium uppercase tracking-wider text-fg-subtle">
             Properties
           </h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {propertyEntries.map(([key, value]) => (
               <div
                 key={key}
-                className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3"
+                className="rounded-lg border border-border bg-bg-elevated/30 px-4 py-3"
               >
-                <div className="text-[11px] uppercase tracking-wider text-white/40">{key}</div>
-                <div className="mt-1 truncate font-mono text-sm text-white">{String(value)}</div>
+                <div className="text-[11px] uppercase tracking-wider text-fg-subtle">{key}</div>
+                <div className="mt-1 truncate font-mono text-sm text-fg">{String(value)}</div>
               </div>
             ))}
           </div>
@@ -248,19 +248,19 @@ export function ProfileDetail({ profile, projectId, onBack }) {
 
       {/* Activity Chart */}
       <div className="mb-8">
-        <h2 className="mb-4 text-xs font-medium uppercase tracking-wider text-white/30">
+        <h2 className="mb-4 text-xs font-medium uppercase tracking-wider text-fg-subtle">
           Activity
         </h2>
-        <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-transparent">
+        <div className="overflow-hidden rounded-xl border border-border-strong bg-gradient-to-b from-bg-elevated/50 to-transparent">
           <div className="relative h-32 sm:h-40">
             <div className="absolute inset-0 bg-gradient-to-t from-emerald-500/[0.03] to-transparent" />
             <div className="relative h-full p-3 pb-5 sm:p-4 sm:pb-6">
               <ActivityChart data={activity} loading={loading} />
             </div>
-            <div className="absolute bottom-1.5 left-3 sm:bottom-2 sm:left-4 text-[9px] sm:text-[10px] uppercase tracking-wider text-white/30">
+            <div className="absolute bottom-1.5 left-3 sm:bottom-2 sm:left-4 text-[9px] sm:text-[10px] uppercase tracking-wider text-fg-subtle">
               Last 30 days
             </div>
-            <div className="absolute bottom-1.5 right-3 sm:bottom-2 sm:right-4 text-[9px] sm:text-[10px] text-white/30">
+            <div className="absolute bottom-1.5 right-3 sm:bottom-2 sm:right-4 text-[9px] sm:text-[10px] text-fg-subtle">
               {activity?.reduce((sum, d) => sum + d.count, 0) || 0} events
             </div>
           </div>
@@ -270,20 +270,20 @@ export function ProfileDetail({ profile, projectId, onBack }) {
       {/* Recent events */}
       <div className="mt-8">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xs font-medium uppercase tracking-wider text-white/30">
+          <h2 className="text-xs font-medium uppercase tracking-wider text-fg-subtle">
             Recent events
           </h2>
           <button
             onClick={handleViewAllEvents}
-            className="text-xs text-white/30 transition-colors hover:text-white/60"
+            className="text-xs text-fg-subtle transition-colors hover:text-fg-muted"
           >
             View all →
           </button>
         </div>
-        <div className="overflow-hidden rounded-lg border border-white/[0.06]">
+        <div className="overflow-hidden rounded-lg border border-border">
           {loading ? (
-            <div className="flex items-center justify-center py-12 bg-white/[0.02]">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/10 border-t-white/40" />
+            <div className="flex items-center justify-center py-12 bg-bg-elevated/30">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-border border-t-accent" />
             </div>
           ) : events.length > 0 ? (
             <div>
@@ -292,7 +292,7 @@ export function ProfileDetail({ profile, projectId, onBack }) {
               ))}
             </div>
           ) : (
-            <div className="bg-white/[0.02] py-12 text-center text-sm text-white/30">
+            <div className="bg-bg-elevated/30 py-12 text-center text-sm text-fg-subtle">
               No events yet
             </div>
           )}

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useUser } from "@/contexts/user.context";
-import { Button } from "@/components/ui/button";
 
 export function Navbar() {
   const router = useRouter();
@@ -12,24 +11,23 @@ export function Navbar() {
     router.push("/");
   };
 
+  const isActive = (path) => router.pathname === path;
+
   return (
-    <header className="sticky top-0 z-50 border-b bg-black/50 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-border bg-bg/80 backdrop-blur-xl">
       <div className="mx-auto flex h-14 max-w-screen-xl items-center justify-between px-3 sm:px-6">
-        <div className="flex items-center gap-6">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded bg-white">
-              <span className="text-xs font-bold text-black">S</span>
-            </div>
-            <span className="font-semibold">Serverlog</span>
+        <div className="flex items-center gap-8">
+          <Link href="/dashboard" className="font-serif text-lg tracking-tight">
+            serverlog
           </Link>
 
-          <nav className="hidden items-center gap-1 md:flex">
+          <nav className="hidden items-center gap-6 md:flex text-sm">
             <Link
               href="/dashboard"
-              className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
-                router.pathname === "/dashboard"
-                  ? "bg-white/10 text-white"
-                  : "text-white/60 hover:text-white"
+              className={`transition-colors ${
+                isActive("/dashboard")
+                  ? "text-fg"
+                  : "text-fg-muted hover:text-fg"
               }`}
             >
               Projects
@@ -37,16 +35,16 @@ export function Navbar() {
           </nav>
         </div>
 
-        <div className="flex items-center gap-4">
-          <span className="hidden text-sm text-white/60 sm:inline">{user?.email}</span>
-          <Button
-            variant="ghost"
-            size="sm"
+        <div className="flex items-center gap-5">
+          <span className="hidden text-xs font-mono text-fg-subtle sm:inline">
+            {user?.email}
+          </span>
+          <button
             onClick={handleLogout}
-            className="text-white/60 hover:text-white hover:bg-white/10"
+            className="text-sm text-fg-muted hover:text-fg transition-colors"
           >
-            Logout
-          </Button>
+            Logout →
+          </button>
         </div>
       </div>
     </header>

@@ -43,13 +43,13 @@ function IconPicker({ value, onChange }) {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex h-10 w-full items-center justify-between rounded-md border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-white transition-colors hover:border-white/20 focus:border-white/20 focus:outline-none focus:ring-1 focus:ring-white/20"
+        className="flex h-10 w-full items-center justify-between rounded-md border border-border bg-bg-elevated/30 px-3 py-2 text-sm text-fg transition-colors hover:border-border-strong focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-accent/30"
       >
-        <span className={value ? "text-xl" : "text-white/30"}>
+        <span className={value ? "text-xl" : "text-fg-subtle"}>
           {value || "Select icon"}
         </span>
         <svg
-          className={`h-4 w-4 text-white/40 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={`h-4 w-4 text-fg-subtle transition-transform ${isOpen ? "rotate-180" : ""}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -59,7 +59,7 @@ function IconPicker({ value, onChange }) {
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 top-full z-50 mt-1 rounded-lg border border-white/10 bg-[#0a0a0a] shadow-xl">
+        <div className="absolute left-0 top-full z-50 mt-1 rounded-lg border border-border bg-bg-elevated shadow-xl">
           <EmojiPicker
             onEmojiClick={handleEmojiSelect}
             theme="dark"
@@ -70,18 +70,18 @@ function IconPicker({ value, onChange }) {
             skinTonesDisabled
             lazyLoadEmojis
           />
-          <div className="border-t border-white/10 p-3">
+          <div className="border-t border-border p-3">
             <form onSubmit={handleCustomSubmit} className="flex gap-2">
               <input
                 type="text"
                 value={customInput}
                 onChange={(e) => setCustomInput(e.target.value)}
                 placeholder="Or type custom emoji/text"
-                className="flex-1 rounded-md border border-white/10 bg-white/[0.02] px-3 py-1.5 text-sm text-white placeholder:text-white/30 focus:border-white/20 focus:outline-none"
+                className="flex-1 rounded-md border border-border bg-bg-elevated/30 px-3 py-1.5 text-sm text-fg placeholder:text-fg-subtle focus:border-border-strong focus:outline-none"
               />
               <button
                 type="submit"
-                className="rounded-md bg-white/10 px-3 py-1.5 text-sm text-white transition-colors hover:bg-white/20"
+                className="rounded-md bg-bg-elevated px-3 py-1.5 text-sm text-fg transition-colors hover:bg-bg-elevated"
               >
                 Add
               </button>
@@ -93,7 +93,7 @@ function IconPicker({ value, onChange }) {
                   onChange("");
                   setIsOpen(false);
                 }}
-                className="mt-2 w-full rounded px-2 py-1.5 text-xs text-white/40 transition-colors hover:bg-white/5 hover:text-white/60"
+                className="mt-2 w-full rounded px-2 py-1.5 text-xs text-fg-subtle transition-colors hover:bg-bg-elevated/40 hover:text-fg-muted"
               >
                 Clear selection
               </button>
@@ -129,19 +129,19 @@ function TagsEditor({ tags, onChange }) {
             value={tag.key}
             onChange={(e) => updateTag(index, "key", e.target.value)}
             placeholder="key"
-            className="h-10 w-1/3 rounded-md border border-white/10 bg-white/[0.02] px-3 text-sm text-white placeholder:text-white/30 focus:border-white/20 focus:outline-none font-mono"
+            className="h-10 w-1/3 rounded-md border border-border bg-bg-elevated/30 px-3 text-sm text-fg placeholder:text-fg-subtle focus:border-border-strong focus:outline-none font-mono"
           />
           <input
             type="text"
             value={tag.value}
             onChange={(e) => updateTag(index, "value", e.target.value)}
             placeholder="value"
-            className="h-10 flex-1 rounded-md border border-white/10 bg-white/[0.02] px-3 text-sm text-white placeholder:text-white/30 focus:border-white/20 focus:outline-none font-mono"
+            className="h-10 flex-1 rounded-md border border-border bg-bg-elevated/30 px-3 text-sm text-fg placeholder:text-fg-subtle focus:border-border-strong focus:outline-none font-mono"
           />
           <button
             type="button"
             onClick={() => removeTag(index)}
-            className="h-10 w-10 shrink-0 rounded-md text-white/30 hover:bg-white/5 hover:text-white/60 transition-colors"
+            className="h-10 w-10 shrink-0 rounded-md text-fg-subtle hover:bg-bg-elevated/40 hover:text-fg-muted transition-colors"
           >
             <svg className="h-4 w-4 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -152,7 +152,7 @@ function TagsEditor({ tags, onChange }) {
       <button
         type="button"
         onClick={addTag}
-        className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/60 transition-colors"
+        className="flex items-center gap-1.5 text-xs text-fg-subtle hover:text-fg-muted transition-colors"
       >
         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -215,8 +215,8 @@ export function PlaygroundPanel({ projectId }) {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       {/* Form */}
-      <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-6">
-        <h3 className="mb-4 text-sm font-medium text-white/80">Send Event</h3>
+      <div className="rounded-lg border border-border bg-bg-elevated/30 p-6">
+        <h3 className="mb-4 text-sm font-medium text-fg">Send Event</h3>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
@@ -229,7 +229,7 @@ export function PlaygroundPanel({ projectId }) {
                 placeholder="alerts"
                 required
               />
-              <p className="text-xs text-white/30">Lowercase, numbers, hyphens only</p>
+              <p className="text-xs text-fg-subtle">Lowercase, numbers, hyphens only</p>
             </div>
 
             <div className="space-y-2">
@@ -265,7 +265,7 @@ export function PlaygroundPanel({ projectId }) {
           </div>
 
           {error && (
-            <div className="rounded-md border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {error}
             </div>
           )}
@@ -277,8 +277,8 @@ export function PlaygroundPanel({ projectId }) {
       </div>
 
       {/* Response */}
-      <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-6">
-        <h3 className="mb-4 text-sm font-medium text-white/80">Response</h3>
+      <div className="rounded-lg border border-border bg-bg-elevated/30 p-6">
+        <h3 className="mb-4 text-sm font-medium text-fg">Response</h3>
 
         {response ? (
           <div className="space-y-4">
@@ -286,7 +286,7 @@ export function PlaygroundPanel({ projectId }) {
               <div className="h-2 w-2 rounded-full bg-green-500" />
               <span className="text-sm text-green-400">Event sent successfully</span>
             </div>
-            <div className="overflow-x-auto rounded-lg bg-white/[0.03] text-xs [&_code]:!bg-transparent [&_span]:!bg-transparent">
+            <div className="overflow-x-auto rounded-lg bg-bg-elevated/40 text-xs [&_code]:!bg-transparent [&_span]:!bg-transparent">
               <SyntaxHighlighter
                 language="json"
                 style={oneDark}
@@ -307,12 +307,12 @@ export function PlaygroundPanel({ projectId }) {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="mb-3 rounded-full bg-white/[0.04] p-3">
-              <svg className="h-6 w-6 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="mb-3 rounded-full bg-bg-elevated/50 p-3">
+              <svg className="h-6 w-6 text-fg-subtle" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <p className="text-sm text-white/40">Send an event to see the response</p>
+            <p className="text-sm text-fg-subtle">Send an event to see the response</p>
           </div>
         )}
       </div>
