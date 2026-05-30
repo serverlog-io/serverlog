@@ -136,6 +136,72 @@ cmd_logs() {
     fi
 }
 
+cmd_uninstall() {
+    local yes=false
+    for arg in "$@"; do
+        case "$arg" in
+            -y|--yes) yes=true ;;
+        esac
+    done
+
+    printf "\n%sThis will PERMANENTLY DELETE:%s\n" "$RED" "$NC"
+    printf "  • All Serverlog containers and volumes (database, events, users, API keys)\n"
+    printf "  • Install directory:  %s\n" "$SERVERLOG_HOME"
+    printf "  • CLI binary:         /usr/local/bin/serverlog (and config)\n"
+    printf "  • Docker images:      serverlog-backend, serverlog-frontend\n"
+    printf "\n%sData cannot be recovered.%s\n\n" "$YELLOW" "$NC"
+
+    if ! $yes; then
+        read -rp "Type 'uninstall' to confirm: " confirm </dev/tty || confirm=""
+        if [ "$confirm" != "uninstall" ]; then
+            log "Aborted. Nothing was removed."
+            return 0
+        fi
+    fi
+
+    # 1. Stop containers + drop volumes
+    if [ -d "$SERVERLOG_HOME" ] && [ -f "$SERVERLOG_HOME/$COMPOSE_FILE" ]; then
+        if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+            need_compose
+            cd "$SERVERLOG_HOME"
+            log "Stopping containers and removing volumes..."
+            dc down -v 2>/dev/null || true
+        else
+            warn "Docker unavailable — skipping container/volume cleanup"
+        fi
+    fi
+
+    # 2. Remove install dir
+    if [ -d "$SERVERLOG_HOME" ]; then
+        log "Removing install directory: $SERVERLOG_HOME"
+        cd /tmp
+        rm -rf "$SERVERLOG_HOME"
+    fi
+
+    # 3. Remove CLI binary and config
+    log "Removing CLI binary and config..."
+    local rm_sudo=""
+    if [ "$(id -u)" -ne 0 ] && command -v sudo >/dev/null 2>&1; then
+        rm_sudo="sudo"
+    fi
+    $rm_sudo rm -f /usr/local/bin/serverlog 2>/dev/null || true
+    $rm_sudo rm -f /etc/serverlog.conf 2>/dev/null || true
+    rm -f "$HOME/.local/bin/serverlog" 2>/dev/null || true
+    rm -rf "$HOME/.config/serverlog" 2>/dev/null || true
+
+    # 4. Remove Docker images
+    if command -v docker >/dev/null 2>&1; then
+        log "Removing Serverlog Docker images..."
+        docker rmi -f serverlog-backend serverlog-frontend 2>/dev/null || true
+    fi
+
+    ok "Serverlog has been uninstalled."
+    printf "\nNot removed (manual cleanup if you also want them gone):\n"
+    printf "  • Docker engine itself\n"
+    printf "  • Cloudflare DNS records / SSL/TLS settings\n"
+    printf "  • UFW rules for ports 80/443\n"
+}
+
 cmd_version() {
     printf "%sserverlog cli%s %s\n" "$BOLD" "$NC" "$VERSION"
     printf "install:  %s\n" "$SERVERLOG_HOME"
@@ -164,6 +230,7 @@ ${BOLD}COMMANDS${NC}
   status            Show running containers
   logs [svc...]     Tail logs (optional: postgres, backend, frontend, caddy)
   version           Show CLI version and install info
+  uninstall [-y]    Remove containers, volumes, install dir, CLI and config
   help              Show this help
 
 ${BOLD}ENVIRONMENT${NC}
@@ -187,6 +254,7 @@ case "${1:-help}" in
     restart)              shift; cmd_restart "$@" ;;
     status|ps)            shift; cmd_status "$@" ;;
     logs)                 shift; cmd_logs "$@" ;;
+    uninstall)            shift; cmd_uninstall "$@" ;;
     version|--version|-v) cmd_version ;;
     help|--help|-h|"")    cmd_help ;;
     *)                    err "Unknown command: $1"; printf "\n"; cmd_help; exit 1 ;;
