@@ -514,25 +514,132 @@ function buildSmoothPath(points) {
   return d;
 }
 
+function buildStepPath(points) {
+  if (points.length < 2) return "";
+  let d = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
+  for (let i = 1; i < points.length; i++) {
+    d += ` L ${points[i].x.toFixed(2)} ${points[i - 1].y.toFixed(2)}`;
+    d += ` L ${points[i].x.toFixed(2)} ${points[i].y.toFixed(2)}`;
+  }
+  return d;
+}
+
+const CHART_COLORS = [
+  { name: "orange", value: "#d97757" },
+  { name: "red", value: "#dc6c64" },
+  { name: "amber", value: "#d9954c" },
+  { name: "green", value: "#8dab6e" },
+  { name: "cyan", value: "#7ba8b8" },
+  { name: "violet", value: "#a07eb0" },
+];
+
+const CHART_TYPES = [
+  { key: "area", label: "Area" },
+  { key: "line", label: "Line" },
+  { key: "bar", label: "Bar" },
+  { key: "step", label: "Step" },
+];
+
+const CHART_RANGES = {
+  "24h": {
+    data: [3, 2, 1, 0, 1, 2, 4, 7, 12, 18, 22, 25, 28, 24, 26, 31, 35, 29, 22, 18, 14, 9, 6, 4],
+    labels: ["", "", "", "04:00", "", "", "", "08:00", "", "", "", "12:00", "", "", "", "16:00", "", "", "", "20:00", "", "", "", ""],
+    tipFormat: (i) => `${String(i).padStart(2, "0")}:00`,
+  },
+  "7d": {
+    data: [42, 56, 38, 64, 71, 88, 102],
+    labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    tipFormat: (i) => ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][i],
+  },
+  "30d": {
+    data: [14, 9, 22, 18, 31, 27, 42, 38, 56, 49, 71, 64, 88, 76, 102, 89, 95, 108, 121, 134, 128, 142, 156, 149, 168, 175, 162, 189, 201, 215],
+    labels: ["May 1", "", "", "", "", "May 6", "", "", "", "", "May 11", "", "", "", "", "May 16", "", "", "", "", "May 21", "", "", "", "", "May 26", "", "", "", "May 30"],
+    tipFormat: (i) => `May ${i + 1}`,
+  },
+};
+
+function TypeIcon({ kind }) {
+  const cls = "w-3.5 h-3 stroke-current";
+  if (kind === "area") {
+    return (
+      <svg viewBox="0 0 16 12" className={cls} fill="none">
+        <path d="M0 9 Q4 4 8 6 T16 3 L16 12 L0 12 Z" fill="currentColor" opacity="0.4" />
+        <path d="M0 9 Q4 4 8 6 T16 3" strokeWidth="1.2" />
+      </svg>
+    );
+  }
+  if (kind === "line") {
+    return (
+      <svg viewBox="0 0 16 12" className={cls} fill="none">
+        <path d="M0 9 L4 6 L8 8 L12 4 L16 5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  if (kind === "bar") {
+    return (
+      <svg viewBox="0 0 16 12" className={cls} fill="currentColor">
+        <rect x="0.5" y="6" width="2.5" height="6" rx="0.5" />
+        <rect x="4.5" y="3" width="2.5" height="9" rx="0.5" />
+        <rect x="8.5" y="7" width="2.5" height="5" rx="0.5" />
+        <rect x="12.5" y="2" width="2.5" height="10" rx="0.5" />
+      </svg>
+    );
+  }
+  if (kind === "step") {
+    return (
+      <svg viewBox="0 0 16 12" className={cls} fill="none">
+        <path d="M0 9 L4 9 L4 6 L8 6 L8 8 L12 8 L12 3 L16 3" strokeWidth="1.5" strokeLinejoin="miter" />
+      </svg>
+    );
+  }
+  return null;
+}
+
 function ChartPreview() {
-  const data = [14, 9, 22, 18, 31, 27, 42, 38, 56, 49, 71, 64, 88, 76, 102];
-  const days = ["May 16", "", "May 18", "", "May 20", "", "May 22", "", "May 24", "", "May 26", "", "May 28", "", "May 30"];
+  const [chartType, setChartType] = useState("area");
+  const [colorIdx, setColorIdx] = useState(0);
+  const [rangeKey, setRangeKey] = useState("30d");
+  const [hoverIdx, setHoverIdx] = useState(null);
+
+  const color = CHART_COLORS[colorIdx].value;
+  const range = CHART_RANGES[rangeKey];
+  const data = range.data;
+  const labels = range.labels;
+
   const width = 720;
-  const height = 200;
-  const padding = { top: 18, right: 14, bottom: 28, left: 14 };
+  const height = 160;
+  const padding = { top: 14, right: 14, bottom: 6, left: 14 };
   const chartW = width - padding.left - padding.right;
   const chartH = height - padding.top - padding.bottom;
   const max = Math.max(...data) * 1.15;
   const baseY = padding.top + chartH;
 
-  const points = data.map((d, i) => ({
-    x: padding.left + (i / (data.length - 1)) * chartW,
-    y: padding.top + chartH - (d / max) * chartH,
-  }));
+  const bucketed = chartType === "bar";
+  const points = data.map((d, i) => {
+    const f = bucketed
+      ? (i + 0.5) / data.length
+      : data.length === 1
+      ? 0.5
+      : i / (data.length - 1);
+    return {
+      x: padding.left + f * chartW,
+      y: padding.top + chartH - (d / max) * chartH,
+    };
+  });
 
-  const linePath = buildSmoothPath(points);
+  const smoothPath = buildSmoothPath(points);
+  const stepPath = buildStepPath(points);
+  const sharpPath = points.reduce(
+    (acc, p, i) =>
+      acc + (i === 0 ? `M ${p.x.toFixed(2)} ${p.y.toFixed(2)}` : ` L ${p.x.toFixed(2)} ${p.y.toFixed(2)}`),
+    ""
+  );
+
+  const linePath =
+    chartType === "step" ? stepPath : chartType === "line" ? sharpPath : smoothPath;
   const last = points[points.length - 1];
   const first = points[0];
+  const closeStep = chartType === "step";
   const areaPath = `${linePath} L ${last.x.toFixed(2)} ${baseY} L ${first.x.toFixed(2)} ${baseY} Z`;
 
   const total = data.reduce((a, b) => a + b, 0);
@@ -541,8 +648,32 @@ function ChartPreview() {
 
   const gridY = [0.25, 0.5, 0.75].map((f) => padding.top + chartH * f);
 
+  const barWidth = Math.min((chartW / data.length) * 0.6, 24);
+
+  const handleMove = (e) => {
+    const svg = e.currentTarget;
+    const rect = svg.getBoundingClientRect();
+    const xPx = e.clientX - rect.left;
+    const vx = (xPx / rect.width) * width;
+    let nearest = 0;
+    let best = Infinity;
+    for (let i = 0; i < points.length; i++) {
+      const d = Math.abs(points[i].x - vx);
+      if (d < best) {
+        best = d;
+        nearest = i;
+      }
+    }
+    setHoverIdx(nearest);
+  };
+  const handleLeave = () => setHoverIdx(null);
+
+  const hoverPoint = hoverIdx !== null ? points[hoverIdx] : null;
+  const showLastMarker =
+    chartType !== "bar" && hoverIdx === null;
+
   return (
-    <div className="border border-border bg-bg-elevated/30 rounded-lg overflow-hidden">
+    <div className="border border-border bg-bg-elevated/30 rounded-lg">
       <div className="flex items-center justify-between gap-4 px-4 py-2.5 border-b border-border">
         <div className="flex items-center gap-2.5 min-w-0">
           <span className="text-[0.65rem] font-mono uppercase tracking-[0.18em] text-fg-subtle shrink-0">
@@ -557,8 +688,11 @@ function ChartPreview() {
             <span className="text-fg-muted">payment</span>
           </code>
         </div>
-        <span className="text-[0.65rem] font-mono text-fg-subtle shrink-0">
-          last 15 days
+        <span
+          className="text-[0.65rem] font-mono shrink-0"
+          style={{ color }}
+        >
+          ●
         </span>
       </div>
 
@@ -573,71 +707,194 @@ function ChartPreview() {
           </span>
         </div>
         <p className="mt-1 text-xs text-fg-subtle">
-          vs. previous period
+          vs. previous period · {rangeKey === "24h" ? "last 24 hours" : rangeKey === "7d" ? "last 7 days" : "last 30 days"}
         </p>
       </div>
 
-      <svg
-        viewBox={`0 0 ${width} ${height}`}
-        className="w-full h-auto block"
-        preserveAspectRatio="none"
-      >
-        <defs>
-          <linearGradient id="chartFill" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="var(--color-accent)" stopOpacity="0.28" />
-            <stop offset="100%" stopColor="var(--color-accent)" stopOpacity="0" />
-          </linearGradient>
-        </defs>
+      <div className="relative">
+        <svg
+          viewBox={`0 0 ${width} ${height}`}
+          className="w-full h-auto block"
+          preserveAspectRatio="none"
+          onMouseMove={handleMove}
+          onMouseLeave={handleLeave}
+        >
+          <defs>
+            <linearGradient id="chartFill" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity="0.28" />
+              <stop offset="100%" stopColor={color} stopOpacity="0" />
+            </linearGradient>
+          </defs>
 
-        {gridY.map((y, i) => (
-          <line
-            key={i}
-            x1={padding.left}
-            x2={width - padding.right}
-            y1={y}
-            y2={y}
-            stroke="var(--color-border)"
-            strokeWidth="1"
-            strokeDasharray="2 4"
-          />
-        ))}
+          {gridY.map((y, i) => (
+            <line
+              key={i}
+              x1={padding.left}
+              x2={width - padding.right}
+              y1={y}
+              y2={y}
+              stroke="var(--color-border)"
+              strokeWidth="1"
+              strokeDasharray="2 4"
+            />
+          ))}
 
-        <path d={areaPath} fill="url(#chartFill)" />
-        <path
-          d={linePath}
-          fill="none"
-          stroke="var(--color-accent)"
-          strokeWidth="1.75"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
+          {chartType === "bar" ? (
+            data.map((d, i) => {
+              const h = (d / max) * chartH;
+              const isHover = hoverIdx === i;
+              return (
+                <rect
+                  key={i}
+                  x={points[i].x - barWidth / 2}
+                  y={padding.top + chartH - h}
+                  width={barWidth}
+                  height={h}
+                  rx="1.5"
+                  fill={color}
+                  opacity={hoverIdx !== null && !isHover ? 0.5 : 0.85}
+                />
+              );
+            })
+          ) : (
+            <>
+              {chartType === "area" && (
+                <path d={areaPath} fill="url(#chartFill)" />
+              )}
+              <path
+                d={linePath}
+                fill="none"
+                stroke={color}
+                strokeWidth="1.75"
+                strokeLinecap={closeStep ? "butt" : "round"}
+                strokeLinejoin={closeStep ? "miter" : "round"}
+              />
+              {showLastMarker && (
+                <>
+                  <circle cx={last.x} cy={last.y} r="10" fill={color} opacity="0.18" />
+                  <circle
+                    cx={last.x}
+                    cy={last.y}
+                    r="3.5"
+                    fill="var(--color-bg)"
+                    stroke={color}
+                    strokeWidth="1.75"
+                  />
+                </>
+              )}
+            </>
+          )}
 
-        <circle
-          cx={last.x}
-          cy={last.y}
-          r="10"
-          fill="var(--color-accent)"
-          opacity="0.18"
-        />
-        <circle
-          cx={last.x}
-          cy={last.y}
-          r="3.5"
-          fill="var(--color-bg)"
-          stroke="var(--color-accent)"
-          strokeWidth="1.75"
-        />
-      </svg>
+          {hoverPoint && (
+            <>
+              <line
+                x1={hoverPoint.x}
+                x2={hoverPoint.x}
+                y1={padding.top}
+                y2={padding.top + chartH}
+                stroke={color}
+                strokeOpacity="0.35"
+                strokeDasharray="2 3"
+              />
+              {chartType !== "bar" && (
+                <circle
+                  cx={hoverPoint.x}
+                  cy={hoverPoint.y}
+                  r="3.5"
+                  fill="var(--color-bg)"
+                  stroke={color}
+                  strokeWidth="1.75"
+                />
+              )}
+            </>
+          )}
+        </svg>
 
-      <div
-        className="grid px-4 pb-3 text-[0.65rem] font-mono text-fg-subtle"
-        style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}
-      >
-        {days.map((d, i) => (
-          <span key={i} className="text-center truncate">
-            {d}
-          </span>
-        ))}
+        {hoverPoint && (
+          <div
+            className="absolute pointer-events-none px-2 py-1 rounded border border-border bg-bg-elevated text-[0.7rem] font-mono whitespace-nowrap shadow-lg z-10"
+            style={{
+              left: `${(hoverPoint.x / width) * 100}%`,
+              top: `${(hoverPoint.y / height) * 100}%`,
+              transform: "translate(-50%, calc(-100% - 10px))",
+            }}
+          >
+            <span className="text-fg-subtle">{range.tipFormat(hoverIdx)}</span>
+            <span className="text-fg ml-2 tabular-nums">{data[hoverIdx]}</span>
+            <span className="text-fg-subtle ml-1">events</span>
+          </div>
+        )}
+      </div>
+
+      <div className="relative h-7 text-[0.65rem] font-mono text-fg-subtle">
+        {labels.map((d, i) => {
+          if (!d) return null;
+          const xPct = (points[i].x / width) * 100;
+          let tx = "-50%";
+          if (xPct < 8) tx = "0%";
+          else if (xPct > 92) tx = "-100%";
+          return (
+            <span
+              key={i}
+              className="absolute top-1 whitespace-nowrap"
+              style={{ left: `${xPct}%`, transform: `translateX(${tx})` }}
+            >
+              {d}
+            </span>
+          );
+        })}
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-4 px-4 py-3 border-t border-border">
+        <div className="flex items-center gap-1">
+          {CHART_TYPES.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setChartType(t.key)}
+              title={t.label}
+              className={`inline-flex items-center justify-center w-8 h-7 rounded border transition-colors ${
+                chartType === t.key
+                  ? "border-border-strong bg-bg-elevated text-fg"
+                  : "border-transparent text-fg-subtle hover:text-fg-muted hover:border-border"
+              }`}
+            >
+              <TypeIcon kind={t.key} />
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          {CHART_COLORS.map((c, i) => (
+            <button
+              key={c.name}
+              onClick={() => setColorIdx(i)}
+              title={c.name}
+              className={`w-4 h-4 rounded-full transition-transform ${
+                colorIdx === i ? "ring-2 ring-offset-2 ring-offset-bg-elevated scale-110" : "opacity-70 hover:opacity-100"
+              }`}
+              style={{
+                backgroundColor: c.value,
+                "--tw-ring-color": c.value,
+              }}
+            />
+          ))}
+        </div>
+
+        <div className="flex items-center gap-0.5">
+          {Object.keys(CHART_RANGES).map((key) => (
+            <button
+              key={key}
+              onClick={() => setRangeKey(key)}
+              className={`px-2.5 py-1 text-xs font-mono rounded transition-colors ${
+                rangeKey === key
+                  ? "bg-bg-elevated text-fg border border-border-strong"
+                  : "text-fg-subtle hover:text-fg-muted border border-transparent"
+              }`}
+            >
+              {key}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
