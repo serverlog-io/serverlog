@@ -37,7 +37,19 @@ function buildStepPath(points) {
   return d;
 }
 
+// Backend buckets days as UTC midnight. Formatting that timestamp in the
+// browser's local timezone (e.g. ART = UTC-3) would shift the label one day
+// backwards. For day-level intervals we treat the bucket as a calendar date
+// (no time component) so "2026-01-01T00:00:00Z" always renders as Jan 1
+// regardless of the viewer's timezone.
+function dayBucketDate(ts) {
+  const iso = typeof ts === "string" ? ts : new Date(ts).toISOString();
+  const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
+  return new Date(y, m - 1, d); // Local-time Date with the UTC calendar date
+}
+
 function formatXTick(ts, interval) {
+  if (interval === "day") return format(dayBucketDate(ts), "MMM d");
   const d = new Date(ts);
   if (interval === "second") return format(d, "HH:mm:ss");
   if (interval === "minute") return format(d, "HH:mm");
@@ -46,6 +58,7 @@ function formatXTick(ts, interval) {
 }
 
 function formatTooltipLabel(ts, interval) {
+  if (interval === "day") return format(dayBucketDate(ts), "MMM d, yyyy");
   const d = new Date(ts);
   if (interval === "second") return format(d, "HH:mm:ss");
   if (interval === "minute") return format(d, "MMM d, HH:mm");

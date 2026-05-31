@@ -18,8 +18,9 @@ import { CSS } from "@dnd-kit/utilities";
 import DashboardApi from "@/api/dashboard.api";
 import { DashboardChart } from "./dashboard-chart";
 import { useSocket } from "@/hooks/useSocket";
+import { TimeRangeSelector, rangeFromValue } from "@/components/charts/time-range-selector";
 
-function SortableChart({ chart, projectId, onDelete, onUpdate, chartRef }) {
+function SortableChart({ chart, projectId, onDelete, onUpdate, chartRef, rangeValue }) {
   const {
     attributes,
     listeners,
@@ -44,15 +45,41 @@ function SortableChart({ chart, projectId, onDelete, onUpdate, chartRef }) {
         onDelete={onDelete}
         onUpdate={onUpdate}
         dragHandleProps={{ ...attributes, ...listeners }}
+        rangeValue={rangeValue}
       />
     </div>
   );
 }
 
+const STORAGE_KEY = (projectId) => `serverlog:dashboard-range:${projectId}`;
+const DEFAULT_RANGE = { kind: "preset", preset: "24h" };
+
 export function DashboardPanel({ projectId }) {
   const [charts, setCharts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [rangeValue, setRangeValue] = useState(DEFAULT_RANGE);
   const chartRefsMap = useRef(new Map());
+
+  // Restore the last range used for this project on mount
+  useEffect(() => {
+    if (!projectId || typeof window === "undefined") return;
+    try {
+      const stored = window.localStorage.getItem(STORAGE_KEY(projectId));
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && (parsed.kind === "preset" || parsed.kind === "custom")) {
+          setRangeValue(parsed);
+        }
+      }
+    } catch {}
+  }, [projectId]);
+
+  const handleRangeChange = (value) => {
+    setRangeValue(value);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(STORAGE_KEY(projectId), JSON.stringify(value));
+    }
+  };
 
   // Handle new events from socket - broadcast to all charts
   const handleNewEvent = useCallback((event) => {
@@ -156,31 +183,46 @@ export function DashboardPanel({ projectId }) {
   }
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragEnd={handleDragEnd}
-    >
-      <SortableContext items={charts.map((c) => c.id)} strategy={rectSortingStrategy}>
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {charts.map((chart) => (
-            <SortableChart
-              key={chart.id}
-              chart={chart}
-              projectId={projectId}
-              onDelete={handleDelete}
-              onUpdate={handleUpdate}
-              chartRef={(ref) => {
-                if (ref) {
-                  chartRefsMap.current.set(chart.id, ref);
-                } else {
-                  chartRefsMap.current.delete(chart.id);
-                }
-              }}
-            />
-          ))}
-        </div>
-      </SortableContext>
-    </DndContext>
+    <div className="space-y-4">
+      {/* Global time range selector — controls every chart at once */}
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[0.65rem] font-mono uppercase tracking-[0.18em] text-fg-subtle">
+          Showing {charts.length} chart{charts.length === 1 ? "" : "s"}
+        </span>
+        <TimeRangeSelector
+          value={rangeValue}
+          onChange={handleRangeChange}
+          autoRefreshing
+        />
+      </div>
+
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext items={charts.map((c) => c.id)} strategy={rectSortingStrategy}>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {charts.map((chart) => (
+              <SortableChart
+                key={chart.id}
+                chart={chart}
+                projectId={projectId}
+                onDelete={handleDelete}
+                onUpdate={handleUpdate}
+                rangeValue={rangeValue}
+                chartRef={(ref) => {
+                  if (ref) {
+                    chartRefsMap.current.set(chart.id, ref);
+                  } else {
+                    chartRefsMap.current.delete(chart.id);
+                  }
+                }}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
+    </div>
   );
 }

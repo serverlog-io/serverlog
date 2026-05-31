@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useRef, useImperativeHandle, forwardRef, useMemo } from "react";
 import { useRouter } from "next/router";
-import { subHours, subDays, subMinutes } from "date-fns";
-import { MoreVertical, Pencil, Trash2, BarChart3 as BarChartIcon, Palette, ExternalLink, GripVertical, ChevronDown } from "lucide-react";
+import { MoreVertical, Pencil, Trash2, BarChart3 as BarChartIcon, Palette, ExternalLink, GripVertical } from "lucide-react";
 import EventApi from "@/api/event.api";
 import { colorPalette } from "@/lib/colors";
 import { TimeseriesChart } from "@/components/charts/timeseries-chart";
+import { rangeFromValue } from "@/components/charts/time-range-selector";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,16 +22,6 @@ const CHART_TYPES = [
   { value: "BAR", label: "Bar" },
   { value: "STEP", label: "Step" },
   { value: "SCATTER", label: "Scatter" },
-];
-
-const RANGE_OPTIONS = [
-  { label: "1m", value: "1m", getRange: () => ({ start: subMinutes(new Date(), 1), end: new Date() }) },
-  { label: "30m", value: "30m", getRange: () => ({ start: subMinutes(new Date(), 30), end: new Date() }) },
-  { label: "1h", value: "1h", getRange: () => ({ start: subHours(new Date(), 1), end: new Date() }) },
-  { label: "6h", value: "6h", getRange: () => ({ start: subHours(new Date(), 6), end: new Date() }) },
-  { label: "24h", value: "24h", getRange: () => ({ start: subHours(new Date(), 24), end: new Date() }) },
-  { label: "7d", value: "7d", getRange: () => ({ start: subDays(new Date(), 7), end: new Date() }) },
-  { label: "30d", value: "30d", getRange: () => ({ start: subDays(new Date(), 30), end: new Date() }) },
 ];
 
 function getBucketKey(date, interval) {
@@ -92,15 +82,18 @@ function parseSearchQuery(query) {
   return { tagFilters, channelFilters, userFilters, textSearch };
 }
 
+const DEFAULT_RANGE_VALUE = { kind: "preset", preset: "24h" };
+
 export const DashboardChart = forwardRef(function DashboardChart(
-  { chart, projectId, onDelete, onUpdate, dragHandleProps },
+  { chart, projectId, onDelete, onUpdate, dragHandleProps, rangeValue },
   ref
 ) {
   const router = useRouter();
   const [data, setData] = useState([]);
   const [interval, setIntervalState] = useState("hour");
   const [loading, setLoading] = useState(true);
-  const [selectedRange, setSelectedRange] = useState("24h");
+  const effectiveRangeValue = rangeValue || DEFAULT_RANGE_VALUE;
+  const isCustomRange = effectiveRangeValue.kind === "custom";
   const [totalEvents, setTotalEvents] = useState(0);
   const [chartType, setChartType] = useState(chart.chartType || "AREA");
   const [chartColor, setChartColor] = useState(chart.color || "#d97757");
@@ -192,10 +185,7 @@ export const DashboardChart = forwardRef(function DashboardChart(
       setLoading(true);
     }
 
-    const range = RANGE_OPTIONS.find((r) => r.value === selectedRange)?.getRange() || {
-      start: subHours(new Date(), 24),
-      end: new Date(),
-    };
+    const range = rangeFromValue(effectiveRangeValue);
 
     try {
       const params = {
@@ -226,17 +216,19 @@ export const DashboardChart = forwardRef(function DashboardChart(
     } finally {
       setLoading(false);
     }
-  }, [projectId, effectiveChannels, usersFromSearch, textSearch, tagsJson, selectedRange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId, effectiveChannels, usersFromSearch, textSearch, tagsJson, JSON.stringify(effectiveRangeValue)]);
 
   useEffect(() => {
     fetchTimeline(true);
   }, [fetchTimeline]);
 
   useEffect(() => {
-    if (selectedRange === "1m") return;
+    // No auto-refresh on custom ranges (static) or on 1m preset (slide-window handles it).
+    if (isCustomRange || effectiveRangeValue.preset === "1m") return;
     const timer = setInterval(fetchTimeline, 60000);
     return () => clearInterval(timer);
-  }, [fetchTimeline, selectedRange]);
+  }, [fetchTimeline, isCustomRange, effectiveRangeValue.preset]);
 
   const handleSaveName = () => {
     if (editName.trim() && editName !== chart.name && onUpdate) {
@@ -246,7 +238,7 @@ export const DashboardChart = forwardRef(function DashboardChart(
   };
 
   useEffect(() => {
-    if (loading || interval === "day") return;
+    if (loading || interval === "day" || isCustomRange) return;
 
     const timer = setInterval(() => {
       setData((prevData) => {
@@ -268,7 +260,7 @@ export const DashboardChart = forwardRef(function DashboardChart(
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [loading, interval]);
+  }, [loading, interval, isCustomRange]);
 
   const hasFilters = textSearch || tagFilters.length > 0 || effectiveChannels.length > 0 || usersFromSearch.length > 0;
 
@@ -317,29 +309,6 @@ export const DashboardChart = forwardRef(function DashboardChart(
         </span>
 
         <div className="flex-1" />
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-mono text-fg-muted hover:text-fg hover:border-border-strong transition-colors shrink-0"
-              title="Time range"
-            >
-              {RANGE_OPTIONS.find((r) => r.value === selectedRange)?.label}
-              <ChevronDown className="h-3 w-3" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-[110px]">
-            {RANGE_OPTIONS.map((option) => (
-              <DropdownMenuItem
-                key={option.value}
-                onClick={() => setSelectedRange(option.value)}
-                className={`text-xs font-mono ${selectedRange === option.value ? "bg-bg text-fg" : ""}`}
-              >
-                {option.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
