@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useImperativeHandle, forwardRef, useMemo } from "react";
 import { useRouter } from "next/router";
 import { subHours, subDays, subMinutes } from "date-fns";
-import { MoreVertical, Pencil, Trash2, BarChart3 as BarChartIcon, Palette, ExternalLink } from "lucide-react";
+import { MoreVertical, Pencil, Trash2, BarChart3 as BarChartIcon, Palette, ExternalLink, GripVertical, ChevronDown } from "lucide-react";
 import EventApi from "@/api/event.api";
 import { colorPalette } from "@/lib/colors";
 import { TimeseriesChart } from "@/components/charts/timeseries-chart";
@@ -93,7 +93,7 @@ function parseSearchQuery(query) {
 }
 
 export const DashboardChart = forwardRef(function DashboardChart(
-  { chart, projectId, onDelete, onUpdate },
+  { chart, projectId, onDelete, onUpdate, dragHandleProps },
   ref
 ) {
   const router = useRouter();
@@ -273,133 +273,161 @@ export const DashboardChart = forwardRef(function DashboardChart(
   const hasFilters = textSearch || tagFilters.length > 0 || effectiveChannels.length > 0 || usersFromSearch.length > 0;
 
   return (
-    <div className="rounded-lg border border-border bg-bg-elevated/30">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-4 px-4 py-2.5 border-b border-border">
-        <div className="flex items-center gap-3 min-w-0">
-          <span className="text-[0.65rem] font-mono uppercase tracking-[0.18em] text-fg-subtle shrink-0">
-            chart
-          </span>
-          {isEditing ? (
-            <input
-              type="text"
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              onBlur={handleSaveName}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleSaveName();
-                if (e.key === "Escape") {
-                  setEditName(chart.name);
-                  setIsEditing(false);
-                }
-              }}
-              autoFocus
-              className="rounded border border-border-strong bg-bg-elevated px-2 py-0.5 text-sm text-fg outline-none focus:border-accent/50"
-            />
-          ) : (
-            <span className="font-serif text-base text-fg truncate">{chart.name}</span>
-          )}
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="shrink-0 text-[0.65rem] font-mono" style={{ color: chartColor }}>
-            ●
-          </span>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className="rounded p-1 text-fg-subtle hover:bg-bg-elevated hover:text-fg transition-colors focus:outline-none"
-                title="Options"
+    <div className="group rounded-lg border border-border bg-bg-elevated/30 hover:border-border-strong transition-colors">
+      {/* Header: title + count + range pills + menu, all on one row */}
+      <div className="flex items-center gap-2 px-3 py-2">
+        {dragHandleProps && (
+          <button
+            {...dragHandleProps}
+            className="-ml-1 text-fg-subtle/0 group-hover:text-fg-subtle hover:!text-fg-muted transition-colors cursor-grab active:cursor-grabbing shrink-0"
+            title="Drag to reorder"
+            aria-label="Drag to reorder"
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
+        )}
+        {isEditing ? (
+          <input
+            type="text"
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            onBlur={handleSaveName}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleSaveName();
+              if (e.key === "Escape") {
+                setEditName(chart.name);
+                setIsEditing(false);
+              }
+            }}
+            autoFocus
+            className="min-w-0 rounded border border-border-strong bg-bg-elevated px-2 py-0.5 text-sm text-fg outline-none focus:border-accent/50"
+          />
+        ) : (
+          <span className="text-sm font-medium text-fg truncate">{chart.name}</span>
+        )}
+        <span className="font-mono text-xs text-fg-muted tabular-nums shrink-0">
+          {totalEvents.toLocaleString()} event{totalEvents !== 1 ? "s" : ""}
+        </span>
+        <span
+          className="font-mono text-[0.6rem] shrink-0"
+          style={{ color: chartColor }}
+          aria-hidden
+        >
+          ●
+        </span>
+
+        <div className="flex-1" />
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-mono text-fg-muted hover:text-fg hover:border-border-strong transition-colors shrink-0"
+              title="Time range"
+            >
+              {RANGE_OPTIONS.find((r) => r.value === selectedRange)?.label}
+              <ChevronDown className="h-3 w-3" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-[110px]">
+            {RANGE_OPTIONS.map((option) => (
+              <DropdownMenuItem
+                key={option.value}
+                onClick={() => setSelectedRange(option.value)}
+                className={`text-xs font-mono ${selectedRange === option.value ? "bg-bg text-fg" : ""}`}
               >
-                <MoreVertical className="h-4 w-4" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-[160px]">
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger className="text-xs">
-                  <BarChartIcon className="h-4 w-4" />
-                  <span>Chart type</span>
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
-                  {CHART_TYPES.map((type) => (
-                    <DropdownMenuItem
-                      key={type.value}
-                      onClick={() => {
-                        setChartType(type.value);
-                        if (onUpdate) onUpdate(chart.id, { chartType: type.value });
-                      }}
-                      className={`text-xs ${chartType === type.value ? "bg-bg-elevated text-fg" : ""}`}
-                    >
-                      {type.label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger className="text-xs">
-                  <Palette className="h-4 w-4" />
-                  <span>Color</span>
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className="p-2">
-                  <div className="grid grid-cols-6 gap-1.5">
-                    {colorPalette.map((color) => (
-                      <button
-                        key={color}
-                        onClick={() => {
-                          setChartColor(color);
-                          if (onUpdate) onUpdate(chart.id, { color });
-                        }}
-                        className={`h-5 w-5 rounded-full transition-transform hover:scale-110 ${
-                          chartColor === color ? "ring-2 ring-offset-2 ring-offset-bg-elevated scale-110" : ""
-                        }`}
-                        style={{ backgroundColor: color, "--tw-ring-color": color }}
-                      />
-                    ))}
-                  </div>
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-              <DropdownMenuItem onClick={() => setIsEditing(true)} className="text-xs">
-                <Pencil className="h-4 w-4" />
-                <span>Edit name</span>
+                {option.label}
               </DropdownMenuItem>
-              {onDelete && (
-                <>
-                  <DropdownMenuSeparator />
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className="rounded p-1 text-fg-subtle hover:bg-bg-elevated hover:text-fg transition-colors focus:outline-none shrink-0"
+              title="Options"
+            >
+              <MoreVertical className="h-4 w-4" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-[160px]">
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger className="text-xs">
+                <BarChartIcon className="h-4 w-4" />
+                <span>Chart type</span>
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                {CHART_TYPES.map((type) => (
                   <DropdownMenuItem
-                    onClick={() => onDelete(chart.id)}
-                    className="text-xs text-destructive focus:text-destructive"
+                    key={type.value}
+                    onClick={() => {
+                      setChartType(type.value);
+                      if (onUpdate) onUpdate(chart.id, { chartType: type.value });
+                    }}
+                    className={`text-xs ${chartType === type.value ? "bg-bg-elevated text-fg" : ""}`}
                   >
-                    <Trash2 className="h-4 w-4" />
-                    <span>Delete</span>
+                    {type.label}
                   </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+                ))}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger className="text-xs">
+                <Palette className="h-4 w-4" />
+                <span>Color</span>
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="p-2">
+                <div className="grid grid-cols-6 gap-1.5">
+                  {colorPalette.map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => {
+                        setChartColor(color);
+                        if (onUpdate) onUpdate(chart.id, { color });
+                      }}
+                      className={`h-5 w-5 rounded-full transition-transform hover:scale-110 ${
+                        chartColor === color ? "ring-2 ring-offset-2 ring-offset-bg-elevated scale-110" : ""
+                      }`}
+                      style={{ backgroundColor: color, "--tw-ring-color": color }}
+                    />
+                  ))}
+                </div>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+            <DropdownMenuItem onClick={() => setIsEditing(true)} className="text-xs">
+              <Pencil className="h-4 w-4" />
+              <span>Edit name</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => router.push(`/projects/${projectId}?search=${encodeURIComponent(chart.search || "")}`)}
+              className="text-xs"
+            >
+              <ExternalLink className="h-4 w-4" />
+              <span>View events</span>
+            </DropdownMenuItem>
+            {onDelete && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => onDelete(chart.id)}
+                  className="text-xs text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span>Delete</span>
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      {/* Stats */}
-      <div className="px-5 pt-4 pb-1">
-        <div className="flex items-baseline gap-3 flex-wrap">
-          <span className="font-serif text-3xl tracking-tight tabular-nums">
-            {totalEvents}
-          </span>
-          <span className="text-sm text-fg-muted">
-            event{totalEvents !== 1 ? "s" : ""}
-          </span>
-        </div>
-        <p className="mt-1 text-xs text-fg-subtle">
-          {RANGE_OPTIONS.find((r) => r.value === selectedRange)?.label} range
-        </p>
-      </div>
-
-      {/* Filter pills */}
-      <div className="flex items-center justify-between gap-3 px-5 pt-2 pb-2 text-xs">
-        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+      {/* Filter pills row (only if filters exist) */}
+      {hasFilters && (
+        <div className="flex flex-wrap items-center gap-1 px-3 pb-1.5">
           {textSearch && (
             <button
               onClick={() => router.push(`/projects/${projectId}?search=${encodeURIComponent(textSearch)}`)}
-              className="rounded-full bg-bg-elevated px-2.5 py-1 font-mono text-fg-muted border border-border hover:border-border-strong hover:text-fg transition-colors"
+              className="rounded bg-bg-elevated/60 px-1.5 py-0.5 font-mono text-[0.65rem] text-fg-muted border border-border hover:border-border-strong hover:text-fg transition-colors"
             >
               {textSearch}
             </button>
@@ -408,7 +436,7 @@ export const DashboardChart = forwardRef(function DashboardChart(
             <button
               key={i}
               onClick={() => router.push(`/projects/${projectId}?search=${encodeURIComponent(`${key}:${value}`)}`)}
-              className="rounded-full px-2.5 py-1 font-mono border border-border hover:border-border-strong transition-colors"
+              className="rounded bg-bg-elevated/60 px-1.5 py-0.5 font-mono text-[0.65rem] border border-border hover:border-border-strong transition-colors"
               style={{ color: "var(--color-syntax-key)" }}
             >
               {key}:{value}
@@ -418,7 +446,7 @@ export const DashboardChart = forwardRef(function DashboardChart(
             <button
               key={i}
               onClick={() => router.push(`/projects/${projectId}?search=${encodeURIComponent(`#${channel}`)}`)}
-              className="rounded-full px-2.5 py-1 font-mono border border-border hover:border-border-strong transition-colors"
+              className="rounded bg-bg-elevated/60 px-1.5 py-0.5 font-mono text-[0.65rem] border border-border hover:border-border-strong transition-colors"
               style={{ color: "var(--color-syntax-keyword)" }}
             >
               #{channel}
@@ -428,54 +456,27 @@ export const DashboardChart = forwardRef(function DashboardChart(
             <button
               key={i}
               onClick={() => router.push(`/projects/${projectId}?search=${encodeURIComponent(`@${user}`)}`)}
-              className="rounded-full px-2.5 py-1 font-mono border border-border hover:border-border-strong transition-colors"
+              className="rounded bg-bg-elevated/60 px-1.5 py-0.5 font-mono text-[0.65rem] border border-border hover:border-border-strong transition-colors"
               style={{ color: "var(--color-syntax-string)" }}
             >
               @{user}
             </button>
           ))}
-          {!hasFilters && (
-            <span className="text-fg-subtle font-mono">all events</span>
-          )}
         </div>
-        <button
-          onClick={() => router.push(`/projects/${projectId}?search=${encodeURIComponent(chart.search || "")}`)}
-          className="shrink-0 flex items-center gap-1.5 text-fg-subtle hover:text-fg transition-colors"
-          title="View all filtered events"
-        >
-          <span>View</span>
-          <ExternalLink className="h-3 w-3" />
-        </button>
-      </div>
+      )}
 
       {/* Chart */}
-      <div className="px-2 pb-2">
+      <div className="px-2 pb-2 pt-1">
         <TimeseriesChart
           data={data}
           interval={interval}
           chartType={chartType}
           color={chartColor}
           loading={loading}
-          height={180}
-          emptyText="No activity in this time range"
+          height={140}
+          showYAxis
+          emptyText="No activity in this range"
         />
-      </div>
-
-      {/* Range pills */}
-      <div className="flex items-center justify-end gap-0.5 px-3 py-2 border-t border-border">
-        {RANGE_OPTIONS.map((option) => (
-          <button
-            key={option.value}
-            onClick={() => setSelectedRange(option.value)}
-            className={`px-2.5 py-1 text-xs font-mono rounded transition-colors ${
-              selectedRange === option.value
-                ? "bg-bg-elevated text-fg border border-border-strong"
-                : "text-fg-subtle hover:text-fg-muted border border-transparent"
-            }`}
-          >
-            {option.label}
-          </button>
-        ))}
       </div>
     </div>
   );

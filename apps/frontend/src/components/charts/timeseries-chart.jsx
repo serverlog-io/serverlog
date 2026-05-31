@@ -10,9 +10,18 @@ function buildSmoothPath(points) {
     const p2 = points[i + 1];
     const p3 = points[i + 2] || p2;
     const cp1x = p1.x + (p2.x - p0.x) / 6;
-    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    let cp1y = p1.y + (p2.y - p0.y) / 6;
     const cp2x = p2.x - (p3.x - p1.x) / 6;
-    const cp2y = p2.y - (p3.y - p1.y) / 6;
+    let cp2y = p2.y - (p3.y - p1.y) / 6;
+    // Clamp control point Y to the segment's vertical range so the curve
+    // never overshoots above the higher endpoint or below the lower one.
+    // Prevents "below-zero dips" when a peak is surrounded by flat baseline.
+    const segMinY = Math.min(p1.y, p2.y);
+    const segMaxY = Math.max(p1.y, p2.y);
+    if (cp1y < segMinY) cp1y = segMinY;
+    else if (cp1y > segMaxY) cp1y = segMaxY;
+    if (cp2y < segMinY) cp2y = segMinY;
+    else if (cp2y > segMaxY) cp2y = segMaxY;
     d += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
   }
   return d;
@@ -53,6 +62,23 @@ function pickLabelIndices(n, maxLabels = 7) {
   return set;
 }
 
+function pickYTicks(maxRaw) {
+  // Choose ~3-4 "nice" tick values; the last tick is always >= maxRaw so the
+  // bars/lines fit beneath it cleanly.
+  if (maxRaw <= 0) return [0, 1];
+  const candidates = [1, 2, 3, 5, 10, 15, 20, 25, 50, 75, 100, 150, 200, 250, 500, 750, 1000, 1500, 2000, 5000, 10000];
+  const step = candidates.find((c) => c * 4 >= maxRaw) || Math.ceil(maxRaw / 4);
+  const ceiling = Math.ceil(maxRaw / step) * step;
+  const ticks = [];
+  for (let v = 0; v <= ceiling; v += step) ticks.push(v);
+  return ticks;
+}
+
+function formatYTick(n) {
+  if (n >= 1000) return `${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}k`;
+  return String(n);
+}
+
 export function TimeseriesChart({
   data,
   interval = "hour",
@@ -61,6 +87,7 @@ export function TimeseriesChart({
   height = 180,
   loading = false,
   emptyText = "No data",
+  showYAxis = false,
 }) {
   const [hoverIdx, setHoverIdx] = useState(null);
 
@@ -84,13 +111,18 @@ export function TimeseriesChart({
 
   const width = 720;
   const vbHeight = 180;
-  const padding = { top: 14, right: 14, bottom: 22, left: 14 };
+  const padding = { top: 14, right: 14, bottom: 22, left: showYAxis ? 32 : 14 };
   const chartW = width - padding.left - padding.right;
   const chartH = vbHeight - padding.top - padding.bottom;
 
   const counts = data.map((d) => d.count || 0);
   const rawMax = Math.max(...counts, 1);
-  const max = rawMax * 1.15;
+  // When the Y axis is shown, we anchor `max` to the top tick so all tick
+  // labels stay inside the chart container. Otherwise we use a soft 15%
+  // headroom for visual breathing room.
+  const yTicks = showYAxis ? pickYTicks(rawMax) : [];
+  const topTick = yTicks.length ? yTicks[yTicks.length - 1] : 0;
+  const max = showYAxis ? Math.max(topTick, rawMax) : rawMax * 1.15;
   const baseY = padding.top + chartH;
 
   const points = data.map((d, i) => {
@@ -125,7 +157,9 @@ export function TimeseriesChart({
   const first = points[0];
   const areaPath = `${linePath} L ${last.x.toFixed(2)} ${baseY} L ${first.x.toFixed(2)} ${baseY} Z`;
 
-  const gridY = [0.25, 0.5, 0.75].map((f) => padding.top + chartH * f);
+  const gridY = showYAxis
+    ? yTicks.map((v) => padding.top + chartH - (v / max) * chartH)
+    : [0.25, 0.5, 0.75].map((f) => padding.top + chartH * f);
   const barWidth = Math.min((chartW / data.length) * 0.6, 24);
 
   const labelIdxs = pickLabelIndices(data.length, 7);
@@ -298,6 +332,23 @@ export function TimeseriesChart({
           );
         })}
       </div>
+
+      {showYAxis && (
+        <div className="absolute left-0 top-0 bottom-5 w-7 text-[0.6rem] font-mono text-fg-subtle pointer-events-none">
+          {yTicks.map((v, i) => {
+            const yPct = ((padding.top + chartH - (v / max) * chartH) / vbHeight) * 100;
+            return (
+              <span
+                key={i}
+                className="absolute right-1 -translate-y-1/2 tabular-nums"
+                style={{ top: `${yPct}%` }}
+              >
+                {formatYTick(v)}
+              </span>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
