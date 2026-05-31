@@ -123,6 +123,7 @@ model Event {
   @@index([projectId, event])
   @@index([projectId, userId])
   @@index([projectId, userId, timestamp(sort: Desc)])
+  @@index([tags(ops: JsonbOps)], type: Gin)
 }
 
 model Insight {
@@ -184,7 +185,7 @@ model Funnel {
   id          String   @id @default(cuid())
   name        String
   description String   @default("")
-  steps       Json     // [{event: "signup", channel?: "auth", tags?: {}}]
+  steps       Json // [{event: "signup", channel?: "auth", tags?: {}}]
   timeWindow  Int      @default(7) // days to complete funnel
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

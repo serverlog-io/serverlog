@@ -186,19 +186,39 @@ async function buildTimelineFilters(prisma, projectId, start, end, filters) {
         conditions.push(Prisma.sql`("event" ILIKE ${searchPattern} OR "description" ILIKE ${searchPattern})`);
     }
 
-    // Tags filter
+    // Tags filter — uses jsonb containment (@>) so the GIN index on "tags"
+    // can be used. Existence checks (key with empty value) use the ? operator,
+    // which is also GIN-friendly under the default jsonb_ops opclass.
     if (tags) {
         try {
             const tagFilters = typeof tags === 'string' ? JSON.parse(tags) : tags;
             for (const [key, value] of Object.entries(tagFilters)) {
-                // Validate key to prevent injection
                 if (!TAG_KEY_REGEX.test(key)) continue;
 
                 if (value === '' || value === null) {
                     conditions.push(Prisma.sql`"tags" ? ${key}`);
-                } else {
-                    conditions.push(Prisma.sql`jsonb_extract_path_text("tags", ${key}) = ${String(value)}`);
+                    continue;
                 }
+
+                // Build candidate JSON shapes so we match the value regardless
+                // of how it was stored (string, number, or boolean) — preserves
+                // the loose-typing semantics of the previous jsonb_extract_path_text
+                // implementation, while still letting PG use the GIN index.
+                const valueStr = String(value);
+                const candidates = [JSON.stringify({ [key]: valueStr })];
+                if (/^-?\d+(\.\d+)?$/.test(valueStr)) {
+                    candidates.push(JSON.stringify({ [key]: Number(valueStr) }));
+                }
+                if (valueStr === 'true' || valueStr === 'false') {
+                    candidates.push(JSON.stringify({ [key]: valueStr === 'true' }));
+                }
+
+                const alternatives = candidates.map(
+                    (json) => Prisma.sql`"tags" @> ${json}::jsonb`
+                );
+                conditions.push(
+                    Prisma.sql`(${Prisma.join(alternatives, ' OR ')})`
+                );
             }
         } catch {
             // Invalid tags format, skip
