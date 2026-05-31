@@ -279,7 +279,7 @@ export const DashboardChart = forwardRef(function DashboardChart(
         {dragHandleProps && (
           <button
             {...dragHandleProps}
-            className="-ml-1 text-fg-subtle/0 group-hover:text-fg-subtle hover:!text-fg-muted transition-colors cursor-grab active:cursor-grabbing shrink-0"
+            className="-ml-1 text-fg-subtle hover:text-fg transition-colors cursor-pointer shrink-0"
             title="Drag to reorder"
             aria-label="Drag to reorder"
           >
