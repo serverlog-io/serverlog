@@ -13,7 +13,7 @@ import { DashboardPanel } from "@/components/dashboard/dashboard-panel";
 import { FunnelsPanel } from "@/components/funnels/funnels-panel";
 import { ProfilesPanel } from "@/components/profiles/profiles-panel";
 
-const VALID_TABS = ["events", "dashboard", "funnels", "profiles", "playground", "apikeys", "settings"];
+const VALID_TABS = ["events", "dashboard", "playground", "funnels", "profiles", "apikeys", "settings"];
 const DEFAULT_TAB = "events";
 
 export default function ProjectDetailPage() {
@@ -101,9 +101,9 @@ export default function ProjectDetailPage() {
   const tabs = [
     { id: "events", label: "Events" },
     { id: "dashboard", label: "Dashboard" },
+    { id: "playground", label: "Playground" },
     { id: "funnels", label: "Funnels" },
     { id: "profiles", label: "Profiles" },
-    { id: "playground", label: "Playground" },
     { id: "apikeys", label: "API Keys" },
     { id: "settings", label: "Settings" },
   ];
@@ -158,6 +158,7 @@ export default function ProjectDetailPage() {
           {activeTab === "events" && (
             <EventsPanel
               projectId={projectId}
+              projectName={project.name}
               onOpenPlayground={() => handleTabChange("playground")}
             />
           )}
@@ -167,6 +168,7 @@ export default function ProjectDetailPage() {
           {activeTab === "playground" && (
             <PlaygroundPage
               projectId={projectId}
+              projectName={project.name}
               channels={channels}
               onChannelCreated={(newChannel) => {
                 setChannels((prev) => [

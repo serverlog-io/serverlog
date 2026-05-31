@@ -18,6 +18,7 @@ import {
   saveHistory,
   generateCode,
 } from "./playground-helpers";
+import { EventDetailModal } from "@/components/events/event-detail-modal";
 
 const VIEW_MODE_KEY = "serverlog:playground:viewMode";
 
@@ -201,7 +202,7 @@ function payloadToBody(payload) {
   return JSON.stringify(payload, null, 2);
 }
 
-export function PlaygroundPage({ projectId, channels = [], onChannelCreated }) {
+export function PlaygroundPage({ projectId, projectName, channels = [], onChannelCreated }) {
   const router = useRouter();
 
   const [body, setBody] = useState(() => payloadToBody(TEMPLATES[0].payload));
@@ -218,10 +219,7 @@ export function PlaygroundPage({ projectId, channels = [], onChannelCreated }) {
   const [loading, setLoading] = useState(false);
 
   const [history, setHistory] = useState(() => loadHistory(projectId));
-  // Track which sidebar row is being "quick-fired" so we can show a tiny spinner there
-  const [firingId, setFiringId] = useState(null);
-  const [pulseId, setPulseId] = useState(null);
-  const [pulseStatus, setPulseStatus] = useState(null);
+  const [selectedHistoryEntry, setSelectedHistoryEntry] = useState(null);
 
   const [codeLanguage, setCodeLanguage] = useState("javascript");
   const [codeCopied, setCodeCopied] = useState(false);
@@ -412,13 +410,6 @@ export function PlaygroundPage({ projectId, channels = [], onChannelCreated }) {
           if (isNew) onChannelCreated(data.channel);
         }
 
-        // Trigger row pulse if this came from sidebar
-        if (rowId) {
-          setPulseId(rowId);
-          setPulseStatus("ok");
-          setTimeout(() => setPulseId(null), 1200);
-        }
-
         return { ok: true, data, durationMs, status: 200 };
       } catch (err) {
         const durationMs = Math.round(performance.now() - startedAt);
@@ -438,12 +429,6 @@ export function PlaygroundPage({ projectId, channels = [], onChannelCreated }) {
         const next = [entry, ...history].slice(0, 50);
         setHistory(next);
         saveHistory(projectId, next);
-
-        if (rowId) {
-          setPulseId(rowId);
-          setPulseStatus("err");
-          setTimeout(() => setPulseId(null), 1200);
-        }
 
         return { ok: false, error: message, durationMs, status };
       }
@@ -480,26 +465,7 @@ export function PlaygroundPage({ projectId, channels = [], onChannelCreated }) {
     setLoading(false);
   };
 
-  // Quick-fire from sidebar template row — sends without loading into editor
-  const quickFire = async (template) => {
-    setFiringId(template.id);
-    const result = await sendPayload(template.payload, template.id);
-    setFiringId(null);
-    // Surface the response inline like a normal send
-    if (result.ok) {
-      setResponse(result.data);
-      setResponseError(null);
-      setResponseStatus(result.status);
-      setResponseMs(result.durationMs);
-    } else {
-      setResponse(null);
-      setResponseError(result.error);
-      setResponseStatus(result.status);
-      setResponseMs(result.durationMs);
-    }
-  };
-
-  // Click row body → load into editor (without sending)
+  // Click row → load into editor (no quick-fire)
   const loadTemplate = (template) => {
     setBody(payloadToBody(template.payload));
     setResponse(null);
@@ -521,23 +487,6 @@ export function PlaygroundPage({ projectId, channels = [], onChannelCreated }) {
       setResponseStatus(entry.status);
     }
     setResponseMs(entry.durationMs ?? null);
-  };
-
-  const replayFromHistory = async (entry) => {
-    setFiringId(entry.id);
-    const result = await sendPayload(entry.payload, entry.id);
-    setFiringId(null);
-    if (result.ok) {
-      setResponse(result.data);
-      setResponseError(null);
-      setResponseStatus(result.status);
-      setResponseMs(result.durationMs);
-    } else {
-      setResponse(null);
-      setResponseError(result.error);
-      setResponseStatus(result.status);
-      setResponseMs(result.durationMs);
-    }
   };
 
   const clearHistory = () => {
@@ -608,23 +557,6 @@ export function PlaygroundPage({ projectId, channels = [], onChannelCreated }) {
         el.selectionStart = el.selectionEnd = start + insert.length;
       });
     }
-  };
-
-  const PlayIcon = (
-    <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
-      <path d="M8 5v14l11-7z" />
-    </svg>
-  );
-
-  const Spinner = (
-    <div className="h-3 w-3 animate-spin rounded-full border-2 border-fg-subtle border-t-accent" />
-  );
-
-  const pulseClass = (id) => {
-    if (pulseId !== id) return "";
-    return pulseStatus === "ok"
-      ? "bg-green-500/10 ring-1 ring-inset ring-green-500/40"
-      : "bg-red-500/10 ring-1 ring-inset ring-red-500/40";
   };
 
   return (
@@ -760,44 +692,27 @@ export function PlaygroundPage({ projectId, channels = [], onChannelCreated }) {
                     </button>
                   </div>
                   <ul className="max-h-80 divide-y divide-border overflow-auto">
-                    {TEMPLATES.map((tpl) => {
-                      const isFiring = firingId === tpl.id;
-                      return (
-                        <li
-                          key={tpl.id}
-                          className={`group relative flex items-center transition-colors hover:bg-bg-elevated/40 ${pulseClass(tpl.id)}`}
+                    {TEMPLATES.map((tpl) => (
+                      <li key={tpl.id}>
+                        <button
+                          type="button"
+                          onClick={() => loadTemplate(tpl)}
+                          className="flex w-full min-w-0 items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-bg-elevated/40"
                         >
-                          <button
-                            type="button"
-                            onClick={() => loadTemplate(tpl)}
-                            className="flex min-w-0 flex-1 items-center gap-2.5 px-3 py-2 text-left"
-                            title="Load into editor"
-                          >
-                            <span className="w-5 shrink-0 text-center text-base">
-                              {tpl.icon}
+                          <span className="w-5 shrink-0 text-center text-base">
+                            {tpl.icon}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-xs font-medium text-fg">
+                              {tpl.name}
                             </span>
-                            <span className="min-w-0 flex-1">
-                              <span className="block truncate text-xs font-medium text-fg">
-                                {tpl.name}
-                              </span>
-                              <span className="block truncate text-[10px] text-fg-subtle">
-                                {tpl.description}
-                              </span>
+                            <span className="block truncate text-[10px] text-fg-subtle">
+                              {tpl.description}
                             </span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => quickFire(tpl)}
-                            disabled={!!firingId || loading}
-                            className="mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border text-fg-subtle opacity-100 transition-all hover:border-accent hover:text-accent sm:opacity-0 sm:group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-50"
-                            aria-label={`Send ${tpl.name}`}
-                            title="Send now"
-                          >
-                            {isFiring ? Spinner : PlayIcon}
-                          </button>
-                        </li>
-                      );
-                    })}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
                   </ul>
                 </PopoverContent>
               </Popover>
@@ -1134,19 +1049,14 @@ export function PlaygroundPage({ projectId, channels = [], onChannelCreated }) {
           ) : (
             <ul className="flex-1 divide-y divide-border overflow-auto">
               {history.map((entry) => {
-                const isFiring = firingId === entry.id;
                 const tagEntries = Object.entries(entry.payload?.tags || {}).slice(0, 2);
                 const extraTags = Math.max(0, Object.keys(entry.payload?.tags || {}).length - 2);
                 return (
-                  <li
-                    key={entry.id}
-                    className={`group relative flex items-center transition-colors hover:bg-bg-elevated/40 ${pulseClass(entry.id)}`}
-                  >
+                  <li key={entry.id}>
                     <button
                       type="button"
-                      onClick={() => loadFromHistory(entry)}
-                      className="flex min-w-0 flex-1 items-start gap-3 px-4 py-2.5 text-left"
-                      title="Load into editor"
+                      onClick={() => setSelectedHistoryEntry(entry)}
+                      className="flex w-full min-w-0 items-start gap-3 px-4 py-2.5 text-left transition-colors hover:bg-bg-elevated/40"
                     >
                       <span
                         className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${statusColor(entry.status)}`}
@@ -1191,16 +1101,6 @@ export function PlaygroundPage({ projectId, channels = [], onChannelCreated }) {
                         </span>
                       </span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => replayFromHistory(entry)}
-                      disabled={!!firingId || loading}
-                      className="mr-3 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border text-fg-subtle opacity-100 transition-all hover:border-accent hover:text-accent sm:opacity-0 sm:group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-50"
-                      aria-label="Replay"
-                      title="Replay"
-                    >
-                      {isFiring ? Spinner : PlayIcon}
-                    </button>
                   </li>
                 );
               })}
@@ -1208,6 +1108,16 @@ export function PlaygroundPage({ projectId, channels = [], onChannelCreated }) {
           )}
         </div>
       </aside>
+
+      <EventDetailModal
+        event={selectedHistoryEntry}
+        open={!!selectedHistoryEntry}
+        onClose={() => setSelectedHistoryEntry(null)}
+        projectName={projectName}
+        onLoadInEditor={() => {
+          if (selectedHistoryEntry) loadFromHistory(selectedHistoryEntry);
+        }}
+      />
     </div>
   );
 }

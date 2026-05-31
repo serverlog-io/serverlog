@@ -4,6 +4,7 @@ import EventApi from "@/api/event.api";
 import ChannelApi from "@/api/channel.api";
 import DashboardApi from "@/api/dashboard.api";
 import { EventRow } from "./event-row";
+import { EventDetailModal } from "./event-detail-modal";
 import { ChannelSidebar } from "./channel-sidebar";
 import { ActivityChart } from "./activity-chart";
 import { useSocket } from "@/hooks/useSocket";
@@ -286,7 +287,7 @@ function buildSearchParams(searchQuery) {
   return params;
 }
 
-export function EventsPanel({ projectId, onOpenPlayground }) {
+export function EventsPanel({ projectId, projectName, onOpenPlayground }) {
   const router = useRouter();
   const [events, setEvents] = useState([]);
   const [channels, setChannels] = useState([]);
@@ -299,6 +300,7 @@ export function EventsPanel({ projectId, onOpenPlayground }) {
   const [chartName, setChartName] = useState("");
   const [savingChart, setSavingChart] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null); // { type: 'event' | 'channel', data }
+  const [selectedEvent, setSelectedEvent] = useState(null);
   const [viewMode, setViewMode] = useState('compact'); // 'cards' | 'compact'
   const [deleting, setDeleting] = useState(false);
   const loaderRef = useRef(null);
@@ -755,6 +757,7 @@ export function EventsPanel({ projectId, onOpenPlayground }) {
                       onTagClick={handleTagClick}
                       onUserClick={handleUserClick}
                       onDelete={handleDeleteEvent}
+                      onSelect={setSelectedEvent}
                     />
                   ))}
                 </div>
@@ -783,6 +786,14 @@ export function EventsPanel({ projectId, onOpenPlayground }) {
           </div>
         )}
       </div>
+
+      {/* Event detail modal */}
+      <EventDetailModal
+        event={selectedEvent}
+        open={!!selectedEvent}
+        onClose={() => setSelectedEvent(null)}
+        projectName={projectName}
+      />
 
       {/* Delete confirmation dialog */}
       <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>

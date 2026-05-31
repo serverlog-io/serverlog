@@ -28,7 +28,10 @@ function MoreMenu({ onDelete, event }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="rounded-md p-1 text-fg-subtle transition-colors hover:text-fg hover:bg-bg-elevated">
+        <button
+          onClick={(e) => e.stopPropagation()}
+          className="rounded-md p-1 text-fg-subtle transition-colors hover:text-fg hover:bg-bg-elevated"
+        >
           <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
             <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
           </svg>
@@ -49,7 +52,13 @@ function MoreMenu({ onDelete, event }) {
   );
 }
 
-export function EventRow({ event, showChannel = true, compact = false, onChannelClick, onTagClick, onUserClick, onDelete }) {
+export function EventRow({ event, showChannel = true, compact = false, onChannelClick, onTagClick, onUserClick, onDelete, onSelect }) {
+  const clickable = !!onSelect;
+  const handleSelect = () => onSelect?.(event);
+  const stop = (fn) => (e) => {
+    e.stopPropagation();
+    fn?.();
+  };
   const [showAllTags, setShowAllTags] = useState(false);
   const channelColor = event.channel?.color || "#d97757";
   const colors = getColorsFromHex(channelColor);
@@ -63,14 +72,17 @@ export function EventRow({ event, showChannel = true, compact = false, onChannel
 
   if (compact) {
     return (
-      <div className="group flex items-center gap-3 border-b border-border px-4 py-2.5 transition-colors hover:bg-bg-elevated/40 last:border-b-0 overflow-hidden">
+      <div
+        onClick={clickable ? handleSelect : undefined}
+        className={`group flex items-center gap-3 border-b border-border px-4 py-2.5 transition-colors hover:bg-bg-elevated/40 last:border-b-0 overflow-hidden ${clickable ? "cursor-pointer" : ""}`}
+      >
         <span className="shrink-0 text-sm w-5 text-center">{event.icon || "●"}</span>
         <span className="shrink-0 text-sm text-fg truncate max-w-[200px]">{event.event}</span>
 
         <div className="min-w-0 flex-1 flex items-center gap-2 overflow-hidden">
           {event.userId && (
             <button
-              onClick={() => onUserClick?.(event.userId)}
+              onClick={stop(() => onUserClick?.(event.userId))}
               className="flex shrink-0 items-center gap-1.5 rounded bg-bg-elevated px-1.5 py-0.5 transition-colors hover:bg-bg-elevated border border-border hover:border-border-strong"
             >
               <img
@@ -84,7 +96,7 @@ export function EventRow({ event, showChannel = true, compact = false, onChannel
           {visibleTags.map(([key, value]) => (
             <button
               key={key}
-              onClick={() => onTagClick?.(key, String(value))}
+              onClick={stop(() => onTagClick?.(key, String(value)))}
               className="hidden shrink-0 items-center gap-1 rounded bg-bg-elevated/60 px-1.5 py-0.5 font-mono text-[10px] transition-colors hover:bg-bg-elevated lg:flex border border-border"
             >
               <span className="text-syntax-key">{key}</span>
@@ -96,7 +108,7 @@ export function EventRow({ event, showChannel = true, compact = false, onChannel
         <div className="flex shrink-0 items-center gap-2">
           {showChannel && event.channel?.name && (
             <button
-              onClick={() => onChannelClick?.(event.channel.slug)}
+              onClick={stop(() => onChannelClick?.(event.channel.slug))}
               className="rounded px-1.5 py-0.5 font-mono text-[11px] transition-colors [background:var(--bg)] [color:var(--text)] hover:[background:var(--bg-hover)]"
               style={{
                 '--bg': colors.bg,
@@ -128,7 +140,10 @@ export function EventRow({ event, showChannel = true, compact = false, onChannel
   const hasFooter = hasTags || event.userId;
 
   return (
-    <div className="group border-b border-border px-5 py-4 transition-colors hover:bg-bg-elevated/40 last:border-b-0">
+    <div
+      onClick={clickable ? handleSelect : undefined}
+      className={`group border-b border-border px-5 py-4 transition-colors hover:bg-bg-elevated/40 last:border-b-0 ${clickable ? "cursor-pointer" : ""}`}
+    >
       <div className="flex items-start gap-4">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-border bg-bg-elevated/60 text-lg">
           {event.icon || "●"}
@@ -144,7 +159,7 @@ export function EventRow({ event, showChannel = true, compact = false, onChannel
         <div className="flex shrink-0 items-center gap-3">
           {showChannel && event.channel?.name && (
             <button
-              onClick={() => onChannelClick?.(event.channel.slug)}
+              onClick={stop(() => onChannelClick?.(event.channel.slug))}
               className="rounded px-2 py-1 font-mono text-xs transition-colors [background:var(--bg)] [color:var(--text)] hover:[background:var(--bg-hover)]"
               style={{
                 '--bg': colors.bg,
@@ -175,7 +190,7 @@ export function EventRow({ event, showChannel = true, compact = false, onChannel
         <div className="mt-3 flex items-center gap-2 pl-14 flex-wrap">
           {event.userId && (
             <button
-              onClick={() => onUserClick?.(event.userId)}
+              onClick={stop(() => onUserClick?.(event.userId))}
               className="flex items-center gap-2 rounded bg-bg-elevated/60 px-2 py-1 border border-border hover:border-border-strong transition-colors"
             >
               <img
@@ -194,7 +209,7 @@ export function EventRow({ event, showChannel = true, compact = false, onChannel
           {visibleTags.map(([key, value]) => (
             <button
               key={key}
-              onClick={() => onTagClick?.(key, String(value))}
+              onClick={stop(() => onTagClick?.(key, String(value)))}
               className="flex items-center gap-1 rounded bg-bg-elevated/60 px-2 py-1 font-mono text-[11px] border border-border hover:border-border-strong transition-colors"
             >
               <span className="text-syntax-key">{key}</span>
@@ -204,7 +219,7 @@ export function EventRow({ event, showChannel = true, compact = false, onChannel
 
           {hiddenTagsCount > 0 && !showAllTags && (
             <button
-              onClick={() => setShowAllTags(true)}
+              onClick={stop(() => setShowAllTags(true))}
               className="rounded px-2 py-1 font-mono text-[11px] text-fg-subtle hover:text-fg transition-colors"
             >
               +{hiddenTagsCount}
@@ -212,7 +227,7 @@ export function EventRow({ event, showChannel = true, compact = false, onChannel
           )}
           {showAllTags && tagEntries.length > MAX_VISIBLE_TAGS && (
             <button
-              onClick={() => setShowAllTags(false)}
+              onClick={stop(() => setShowAllTags(false))}
               className="rounded px-2 py-1 font-mono text-[11px] text-fg-subtle hover:text-fg transition-colors"
             >
               less
