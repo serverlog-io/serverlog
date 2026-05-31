@@ -7,13 +7,13 @@ import { useBreadcrumb } from "@/contexts/breadcrumb.context";
 import { EventsPanel } from "@/components/events/events-panel";
 import { OnlineUsersIndicator } from "@/components/events/online-users-indicator";
 import { ApiKeysPanel } from "@/components/api-keys/api-keys-panel";
-import { PlaygroundDrawer } from "@/components/playground/playground-drawer";
+import { PlaygroundPage } from "@/components/playground/playground-page";
 import { SettingsPanel } from "@/components/settings/settings-panel";
 import { DashboardPanel } from "@/components/dashboard/dashboard-panel";
 import { FunnelsPanel } from "@/components/funnels/funnels-panel";
 import { ProfilesPanel } from "@/components/profiles/profiles-panel";
 
-const VALID_TABS = ["events", "dashboard", "funnels", "profiles", "apikeys", "settings"];
+const VALID_TABS = ["events", "dashboard", "funnels", "profiles", "playground", "apikeys", "settings"];
 const DEFAULT_TAB = "events";
 
 export default function ProjectDetailPage() {
@@ -22,14 +22,7 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [isPlaygroundOpen, setIsPlaygroundOpen] = useState(false);
   const [channels, setChannels] = useState([]);
-
-  useEffect(() => {
-    if (isPlaygroundOpen) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  }, [isPlaygroundOpen]);
 
   // Get active tab from URL path segment
   const tabFromUrl = tabSegments?.[0] || DEFAULT_TAB;
@@ -110,6 +103,7 @@ export default function ProjectDetailPage() {
     { id: "dashboard", label: "Dashboard" },
     { id: "funnels", label: "Funnels" },
     { id: "profiles", label: "Profiles" },
+    { id: "playground", label: "Playground" },
     { id: "apikeys", label: "API Keys" },
     { id: "settings", label: "Settings" },
   ];
@@ -164,45 +158,28 @@ export default function ProjectDetailPage() {
           {activeTab === "events" && (
             <EventsPanel
               projectId={projectId}
-              onOpenPlayground={() => setIsPlaygroundOpen(true)}
+              onOpenPlayground={() => handleTabChange("playground")}
             />
           )}
           {activeTab === "dashboard" && <DashboardPanel projectId={projectId} />}
           {activeTab === "funnels" && <FunnelsPanel projectId={projectId} />}
           {activeTab === "profiles" && <ProfilesPanel projectId={projectId} profileId={profileId} />}
+          {activeTab === "playground" && (
+            <PlaygroundPage
+              projectId={projectId}
+              channels={channels}
+              onChannelCreated={(newChannel) => {
+                setChannels((prev) => [
+                  ...prev,
+                  { ...newChannel, _count: { events: 1 } },
+                ]);
+              }}
+            />
+          )}
           {activeTab === "apikeys" && <ApiKeysPanel projectId={projectId} />}
           {activeTab === "settings" && <SettingsPanel project={project} onDelete={handleDelete} onUpdate={setProject} />}
         </div>
-
-        {/* Playground Side Panel - Only in events tab */}
-        {activeTab === "events" && isPlaygroundOpen && (
-          <div className="hidden w-[420px] shrink-0 self-start lg:block">
-            <PlaygroundDrawer
-              projectId={projectId}
-              isOpen={isPlaygroundOpen}
-              onClose={() => setIsPlaygroundOpen(false)}
-              channels={channels}
-              inline
-              onChannelCreated={(newChannel) => {
-                setChannels(prev => [...prev, { ...newChannel, _count: { events: 1 } }]);
-              }}
-            />
-          </div>
-        )}
       </div>
-
-      {/* Floating Playground Button - Only in events tab */}
-      {activeTab === "events" && !isPlaygroundOpen && (
-        <button
-          onClick={() => setIsPlaygroundOpen(true)}
-          className="fixed bottom-6 right-6 z-40 flex h-12 items-center gap-2 rounded-full bg-accent px-5 text-sm font-medium text-fg shadow-[0_0_40px_-10px_rgba(217,119,87,0.7)] transition-all hover:scale-105 hover:bg-accent-hover"
-        >
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-          Playground
-        </button>
-      )}
     </ProtectedLayout>
   );
 }

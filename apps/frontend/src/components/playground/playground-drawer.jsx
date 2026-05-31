@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/cjs/styles/prism";
@@ -7,6 +8,84 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
+const PRESETS = [
+  {
+    label: "User Signup",
+    data: {
+      channel: "auth",
+      event: "User Signed Up",
+      description: "A new user has signed up",
+      icon: "🎉",
+      userId: "user-123",
+      tags: [
+        { key: "plan", value: "pro" },
+        { key: "source", value: "web" },
+      ],
+    },
+  },
+  {
+    label: "Payment Completed",
+    data: {
+      channel: "billing",
+      event: "Payment Completed",
+      description: "Subscription renewed",
+      icon: "💳",
+      userId: "user-123",
+      tags: [
+        { key: "plan", value: "pro" },
+        { key: "amount", value: "29" },
+      ],
+    },
+  },
+  {
+    label: "API Error",
+    data: {
+      channel: "api",
+      event: "API Error",
+      description: "Request failed with server error",
+      icon: "❌",
+      userId: "user-123",
+      tags: [
+        { key: "status", value: "500" },
+        { key: "endpoint", value: "/v1/data" },
+      ],
+    },
+  },
+  {
+    label: "Custom (blank)",
+    data: {
+      channel: "alerts",
+      event: "",
+      description: "",
+      icon: "",
+      userId: "",
+      tags: [],
+    },
+  },
+];
+
+const DEFAULT_FORM = {
+  channel: "alerts",
+  event: "User Signup",
+  description: "A new user has signed up",
+  icon: "🎉",
+  userId: "user-123",
+  tags: [{ key: "plan", value: "pro" }],
+};
+
+const storageKey = (projectId) => `serverlog:playground:${projectId || "default"}`;
+
+const loadPersisted = (projectId) => {
+  if (typeof window === "undefined") return DEFAULT_FORM;
+  try {
+    const raw = window.localStorage.getItem(storageKey(projectId));
+    if (!raw) return DEFAULT_FORM;
+    return { ...DEFAULT_FORM, ...JSON.parse(raw) };
+  } catch {
+    return DEFAULT_FORM;
+  }
+};
 
 const EmojiPicker = dynamic(() => import("emoji-picker-react"), { ssr: false });
 
@@ -229,20 +308,43 @@ function TagsEditor({ tags, onChange }) {
 }
 
 export function PlaygroundDrawer({ projectId, isOpen, onClose, channels = [], inline = false, onChannelCreated }) {
-  const [channel, setChannel] = useState("alerts");
-  const [event, setEvent] = useState("User Signup");
-  const [description, setDescription] = useState("A new user has signed up");
-  const [icon, setIcon] = useState("🎉");
-  const [userId, setUserId] = useState("user-123");
-  const [tags, setTags] = useState([
-    { key: "plan", value: "pro" },
-  ]);
+  const router = useRouter();
+  const initial = () => loadPersisted(projectId);
+  const [channel, setChannel] = useState(() => initial().channel);
+  const [event, setEvent] = useState(() => initial().event);
+  const [description, setDescription] = useState(() => initial().description);
+  const [icon, setIcon] = useState(() => initial().icon);
+  const [userId, setUserId] = useState(() => initial().userId);
+  const [tags, setTags] = useState(() => initial().tags);
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState(null);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState("code");
   const [codeLanguage, setCodeLanguage] = useState("javascript");
   const [codeCopied, setCodeCopied] = useState(false);
+  const [presetsOpen, setPresetsOpen] = useState(false);
+
+  // Persist form to localStorage (per project) on every change.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(
+        storageKey(projectId),
+        JSON.stringify({ channel, event, description, icon, userId, tags })
+      );
+    } catch {}
+  }, [projectId, channel, event, description, icon, userId, tags]);
+
+  const applyPreset = (preset) => {
+    setChannel(preset.data.channel);
+    setEvent(preset.data.event);
+    setDescription(preset.data.description);
+    setIcon(preset.data.icon);
+    setUserId(preset.data.userId);
+    setTags(preset.data.tags);
+    setPresetsOpen(false);
+    setResponse(null);
+    setError("");
+  };
 
   const tagsToObject = () => {
     const obj = {};
@@ -355,19 +457,59 @@ response = requests.post(
           </svg>
           <h2 className="font-medium">Playground</h2>
         </div>
-        <button
-          onClick={onClose}
-          className="rounded-md p-1.5 text-fg-subtle transition-colors hover:bg-bg-elevated hover:text-fg"
-        >
-          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-1">
+          <Popover open={presetsOpen} onOpenChange={setPresetsOpen}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-fg-muted transition-colors hover:bg-bg-elevated hover:text-fg"
+              >
+                Presets
+                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-56 p-1">
+              <ul className="space-y-0.5">
+                {PRESETS.map((preset) => (
+                  <li key={preset.label}>
+                    <button
+                      type="button"
+                      onClick={() => applyPreset(preset)}
+                      className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-fg-muted transition-colors hover:bg-bg-elevated hover:text-fg"
+                    >
+                      <span className="text-base">{preset.data.icon || "✏️"}</span>
+                      <span className="flex-1 truncate">{preset.label}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </PopoverContent>
+          </Popover>
+          <button
+            onClick={onClose}
+            className="rounded-md p-1.5 text-fg-subtle transition-colors hover:bg-bg-elevated hover:text-fg"
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* Form Section */}
       <div className="border-b border-border p-4">
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form
+          onSubmit={handleSubmit}
+          onKeyDown={(e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+              e.preventDefault();
+              handleSubmit(e);
+            }
+          }}
+          className="space-y-3"
+        >
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs text-fg-muted">Channel</Label>
@@ -436,151 +578,106 @@ response = requests.post(
                 Sending...
               </span>
             ) : (
-              "Send Event"
+              <span className="flex items-center justify-center gap-2">
+                Send Event
+                <kbd className="rounded border border-black/20 bg-black/10 px-1 py-0 text-[10px] font-mono">⌘↵</kbd>
+              </span>
             )}
           </Button>
         </form>
       </div>
 
-      {/* Tabs Section */}
-      <div className="flex-1 flex flex-col min-h-0">
-        {/* Tab Headers */}
-        <div className="flex items-center gap-1 border-b border-border px-4">
+      {/* Response (inline, only after submit) */}
+      {response && (
+        <div className="border-b border-border">
+          <div className="flex items-center justify-between border-b border-border px-4 py-2">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-green-500" />
+              <span className="text-xs font-medium text-green-400">200 OK</span>
+              <span className="text-[10px] text-fg-subtle">· Event created</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => router.push(`/projects/${projectId}`)}
+              className="text-[11px] text-accent transition-colors hover:underline"
+            >
+              View in Events →
+            </button>
+          </div>
+          <div className="max-h-48 overflow-auto text-xs [&_code]:!bg-transparent [&_span]:!bg-transparent">
+            <SyntaxHighlighter
+              language="json"
+              style={oneDark}
+              customStyle={{
+                margin: 0,
+                padding: "0.75rem 1rem",
+                background: "transparent",
+                fontSize: "0.7rem",
+              }}
+              codeTagProps={{ style: { background: "transparent" } }}
+            >
+              {JSON.stringify(response, null, 2)}
+            </SyntaxHighlighter>
+          </div>
+        </div>
+      )}
+
+      {/* Code (always visible at the bottom) */}
+      <div className="flex flex-1 min-h-0 flex-col">
+        <div className="flex items-center justify-between border-b border-border px-4 py-2">
+          <div className="flex gap-1">
+            {CODE_LANGUAGES.map((lang) => (
+              <button
+                key={lang.id}
+                type="button"
+                onClick={() => setCodeLanguage(lang.id)}
+                className={`rounded px-2 py-1 text-[10px] font-medium transition-colors ${
+                  codeLanguage === lang.id
+                    ? "bg-bg-elevated text-fg"
+                    : "text-fg-subtle hover:text-fg-muted"
+                }`}
+              >
+                {lang.label}
+              </button>
+            ))}
+          </div>
           <button
             type="button"
-            onClick={() => setActiveTab("code")}
-            className={`relative px-3 py-2 text-xs font-medium transition-colors ${
-              activeTab === "code" ? "text-fg" : "text-fg-subtle hover:text-fg-muted"
-            }`}
+            onClick={handleCopyCode}
+            className="flex items-center gap-1 px-2 py-1 text-[10px] text-fg-subtle transition-colors hover:text-fg"
           >
-            Code
-            {activeTab === "code" && (
-              <span className="absolute bottom-0 left-0 right-0 h-px bg-white" />
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("response")}
-            className={`relative flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors ${
-              activeTab === "response" ? "text-fg" : "text-fg-subtle hover:text-fg-muted"
-            }`}
-          >
-            Response
-            {response && (
-              <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-            )}
-            {activeTab === "response" && (
-              <span className="absolute bottom-0 left-0 right-0 h-px bg-white" />
+            {codeCopied ? (
+              <>
+                <svg className="h-3 w-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-green-400">Copied</span>
+              </>
+            ) : (
+              <>
+                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                Copy
+              </>
             )}
           </button>
         </div>
-
-        {/* Tab Content */}
-        <div className="flex-1 overflow-auto">
-          {activeTab === "code" && (
-            <div className="h-full flex flex-col">
-              {/* Language Selector */}
-              <div className="flex items-center justify-between px-4 py-2 border-b border-border">
-                <div className="flex gap-1">
-                  {CODE_LANGUAGES.map((lang) => (
-                    <button
-                      key={lang.id}
-                      type="button"
-                      onClick={() => setCodeLanguage(lang.id)}
-                      className={`px-2 py-1 text-[10px] font-medium rounded transition-colors ${
-                        codeLanguage === lang.id
-                          ? "bg-bg-elevated text-fg"
-                          : "text-fg-subtle hover:text-fg-muted"
-                      }`}
-                    >
-                      {lang.label}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  onClick={handleCopyCode}
-                  className="flex items-center gap-1 px-2 py-1 text-[10px] text-fg-subtle hover:text-fg transition-colors"
-                >
-                  {codeCopied ? (
-                    <>
-                      <svg className="h-3 w-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      <span className="text-green-400">Copied</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                      Copy
-                    </>
-                  )}
-                </button>
-              </div>
-              {/* Code Block */}
-              <div className="flex-1 overflow-auto text-xs [&_code]:!bg-transparent [&_span]:!bg-transparent">
-                <SyntaxHighlighter
-                  language={codeLanguage === "curl" ? "bash" : codeLanguage}
-                  style={oneDark}
-                  customStyle={{
-                    margin: 0,
-                    padding: "1rem",
-                    background: "transparent",
-                    fontSize: "0.75rem",
-                  }}
-                  codeTagProps={{
-                    style: { background: "transparent" }
-                  }}
-                  showLineNumbers={false}
-                >
-                  {generateCode(codeLanguage)}
-                </SyntaxHighlighter>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "response" && (
-            <div className="h-full flex flex-col">
-              {response ? (
-                <>
-                  <div className="flex items-center gap-2 px-4 py-2 border-b border-border">
-                    <span className="h-2 w-2 rounded-full bg-green-500" />
-                    <span className="text-xs text-green-400">200 OK</span>
-                    <span className="text-[10px] text-fg-subtle">• Event created</span>
-                  </div>
-                  <div className="flex-1 overflow-auto text-xs [&_code]:!bg-transparent [&_span]:!bg-transparent">
-                    <SyntaxHighlighter
-                      language="json"
-                      style={oneDark}
-                      customStyle={{
-                        margin: 0,
-                        padding: "1rem",
-                        background: "transparent",
-                        fontSize: "0.75rem",
-                      }}
-                      codeTagProps={{
-                        style: { background: "transparent" }
-                      }}
-                    >
-                      {JSON.stringify(response, null, 2)}
-                    </SyntaxHighlighter>
-                  </div>
-                </>
-              ) : (
-                <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
-                  <div className="mb-3 rounded-full bg-bg-elevated/40 p-3">
-                    <svg className="h-5 w-5 text-fg-subtle" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <p className="text-xs text-fg-subtle">No response yet</p>
-                  <p className="text-[10px] text-fg-subtle mt-1">Send an event to see the response</p>
-                </div>
-              )}
-            </div>
-          )}
+        <div className="flex-1 overflow-auto text-xs [&_code]:!bg-transparent [&_span]:!bg-transparent">
+          <SyntaxHighlighter
+            language={codeLanguage === "curl" ? "bash" : codeLanguage}
+            style={oneDark}
+            customStyle={{
+              margin: 0,
+              padding: "1rem",
+              background: "transparent",
+              fontSize: "0.75rem",
+            }}
+            codeTagProps={{ style: { background: "transparent" } }}
+            showLineNumbers={false}
+          >
+            {generateCode(codeLanguage)}
+          </SyntaxHighlighter>
         </div>
       </div>
     </div>
